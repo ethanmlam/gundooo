@@ -1,0 +1,12 @@
+{
+  "active": true,
+  "iteration": 1,
+  "max_iterations": 100,
+  "started_at": "2026-05-02T22:12:59.341Z",
+  "prompt": "ralph: In /backend/data/ there's AIS_real.csv from MarineCadastre with real vessel data near Long Beach. Inspect its columns, load it, group by MMSI, sort by timestamp, find real dark periods (gaps 4+ hours). Replace the synthetic data in main.py with this real data. Keep same API contract. Don't stop until GET /vessels and GET /dark-events return real vessel data.",
+  "session_id": "fa8e7726-e1a7-4be5-be70-279a825b015e",
+  "project_path": "/Users/jacob/gundooo/backend",
+  "linked_ultrawork": true,
+  "awaiting_confirmation": true,
+  "last_checked_at": "2026-05-02T22:12:59.343Z"
+}

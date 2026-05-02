@@ -1,0 +1,168 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1777759268505,
+  "projectRoot": "/Users/jacob/gundooo",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      },
+      {
+        "name": "TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "tsconfig.json"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "react",
+        "version": "19.2.0",
+        "category": "frontend"
+      },
+      {
+        "name": "react-dom",
+        "version": "19.2.0",
+        "category": "frontend"
+      },
+      {
+        "name": "vite",
+        "version": "7.3.2",
+        "category": "build"
+      }
+    ],
+    "packageManager": "npm",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": "npm run build",
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": "npm run dev",
+    "scripts": {
+      "dev": "vite --host 0.0.0.0",
+      "build": "vite build",
+      "preview": "vite preview --host 0.0.0.0"
+    }
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": "type-based"
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "src"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "backend": {
+      "path": "backend",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1777759268480,
+      "keyFiles": []
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 2,
+      "lastAccessed": 1777759268481,
+      "keyFiles": [
+        "main.tsx",
+        "styles.css"
+      ]
+    },
+    "src/app": {
+      "path": "src/app",
+      "purpose": "Application code",
+      "fileCount": 1,
+      "lastAccessed": 1777759268493,
+      "keyFiles": [
+        "router.tsx"
+      ]
+    },
+    "src/components": {
+      "path": "src/components",
+      "purpose": "UI components",
+      "fileCount": 0,
+      "lastAccessed": 1777759268493,
+      "keyFiles": []
+    },
+    "src/data": {
+      "path": "src/data",
+      "purpose": "Data files",
+      "fileCount": 3,
+      "lastAccessed": 1777759268494,
+      "keyFiles": [
+        "cities.ts",
+        "scenario.ts",
+        "theaters.ts"
+      ]
+    },
+    "src/lib": {
+      "path": "src/lib",
+      "purpose": "Library code",
+      "fileCount": 3,
+      "lastAccessed": 1777759268494,
+      "keyFiles": [
+        "mockFeeds.ts",
+        "queryParser.ts",
+        "store.ts"
+      ]
+    },
+    "src/routes": {
+      "path": "src/routes",
+      "purpose": "Route handlers",
+      "fileCount": 3,
+      "lastAccessed": 1777759268494,
+      "keyFiles": [
+        "Landing.tsx",
+        "Mission.tsx",
+        "TheaterSelect.tsx"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "backend/main.py",
+      "accessCount": 11,
+      "lastAccessed": 1777763981961,
+      "type": "file"
+    },
+    {
+      "path": "backend/engine.py",
+      "accessCount": 4,
+      "lastAccessed": 1777763659699,
+      "type": "file"
+    },
+    {
+      "path": "backend/intent.py",
+      "accessCount": 1,
+      "lastAccessed": 1777763781330,
+      "type": "file"
+    },
+    {
+      "path": "backend/triage.py",
+      "accessCount": 1,
+      "lastAccessed": 1777763968013,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

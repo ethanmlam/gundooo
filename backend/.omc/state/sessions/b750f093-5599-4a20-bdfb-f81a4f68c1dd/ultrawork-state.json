@@ -1,0 +1,10 @@
+{
+  "active": true,
+  "started_at": "2026-05-02T23:18:24.488Z",
+  "original_prompt": "ralph: In /backend, add a triage module triage.py. For every dark event from the dark events list, compute a threat_score (0-100) combining: intent classification (evasion=high, loitering=high, rendezvous=medium, normal_transit=low, anchoring=zero), dark_duration_hours (longer=higher), last_known_speed (moving=higher than stationary), vessel_type (cargo/tanker=higher than pleasure_craft/sailing), and flag state (non-US MMSI prefix=higher). Return all dark events ranked by threat_score descending with {mmsi, vessel_name, vessel_type, threat_score, intent, dark_duration_hours, reasoning}. Add endpoint GET /triage that returns the ranked list. Don't stop until the endpoint returns results with GRACEFUL LEADER ranked near the top.",
+  "session_id": "b750f093-5599-4a20-bdfb-f81a4f68c1dd",
+  "project_path": "/Users/jacob/gundooo/backend",
+  "reinforcement_count": 0,
+  "awaiting_confirmation": true,
+  "last_checked_at": "2026-05-02T23:18:24.488Z"
+}
