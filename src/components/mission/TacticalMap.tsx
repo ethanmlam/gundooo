@@ -1,4 +1,5 @@
 import DeckGL from '@deck.gl/react';
+import { useMemo, useState } from 'react';
 import { Map } from 'react-map-gl/maplibre';
 import { PathLayer, PolygonLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -6,7 +7,44 @@ import { missionScenario, type MissionScenario } from '../../data/scenario';
 import { useLiveAis } from '../../lib/useLiveAis';
 import type { BackendState, ApiVessel, DarkEvent, ParticleCloud, Recommendation, SensorTasking } from '../../lib/backendApi';
 
-const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+const BASEMAPS = {
+  dark: {
+    label: 'Dark',
+    style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+  },
+  terrain: {
+    label: 'Terrain',
+    style: {
+      version: 8,
+      sources: {
+        topo: {
+          type: 'raster',
+          tiles: ['https://tile.opentopomap.org/{z}/{x}/{y}.png'],
+          tileSize: 256,
+          attribution: '© OpenStreetMap contributors, SRTM, OpenTopoMap',
+        },
+      },
+      layers: [{ id: 'topo', type: 'raster', source: 'topo', paint: { 'raster-opacity': 0.92 } }],
+    },
+  },
+  satellite: {
+    label: 'Satellite',
+    style: {
+      version: 8,
+      sources: {
+        esri: {
+          type: 'raster',
+          tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+          tileSize: 256,
+          attribution: 'Tiles © Esri',
+        },
+      },
+      layers: [{ id: 'esri', type: 'raster', source: 'esri', paint: { 'raster-opacity': 0.9 } }],
+    },
+  },
+} as const;
+
+type BasemapKey = keyof typeof BASEMAPS;
 
 type Props = {
   scenario?: MissionScenario;
@@ -49,6 +87,8 @@ function taskingPosition(tasking: SensorTasking) {
 }
 
 export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi }: Props) {
+  const [basemap, setBasemap] = useState<BasemapKey>('dark');
+  const mapStyle = useMemo(() => BASEMAPS[basemap].style, [basemap]);
   const showLiveAis = !backend?.isBackendOnline && (scenario.id === 'strait-of-hormuz' || scenario.id === 'persian-gulf');
   const { snapshot, isFresh } = useLiveAis(showLiveAis);
   const liveVessels = isFresh ? snapshot.vessels : [];
@@ -244,11 +284,20 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi 
     }),
   ];
 
-  return <DeckGL
-    initialViewState={{ longitude: scenario.center[0], latitude: scenario.center[1], zoom: 7.2, pitch: 34, bearing: -18 }}
-    controller={true}
-    layers={layers}
-  >
-    <Map mapStyle={MAP_STYLE} />
-  </DeckGL>;
+  return <div className="tactical-map-shell">
+    <DeckGL
+      initialViewState={{ longitude: scenario.center[0], latitude: scenario.center[1], zoom: 7.2, pitch: 34, bearing: -18 }}
+      controller={true}
+      layers={layers}
+    >
+      <Map mapStyle={mapStyle as any} />
+    </DeckGL>
+    <div className="basemap-toggle" aria-label="Basemap toggle">
+      {(Object.keys(BASEMAPS) as BasemapKey[]).map((key) => <button
+        key={key}
+        className={key === basemap ? 'active' : ''}
+        onClick={() => setBasemap(key)}
+      >{BASEMAPS[key].label}</button>)}
+    </div>
+  </div>;
 }
