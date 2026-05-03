@@ -13,6 +13,11 @@ from engine import particle_propagate, bayesian_update, recommend_sensor, Partic
 from intent import classify_intent
 from triage import triage_dark_events, get_model_weights
 from correlation import find_correlations
+import adsb
+import sanctions
+import weather
+import satellite
+import fusion
 
 app = FastAPI(title="ARGUS Maritime Intelligence")
 app.add_middleware(
@@ -339,6 +344,84 @@ def get_triage_weights():
     if weights is None:
         raise HTTPException(status_code=404, detail="Model not yet trained. Call /triage first.")
     return weights
+
+
+# --- Register new module routers and wire up callbacks ---
+
+app.include_router(adsb.router)
+app.include_router(sanctions.router)
+app.include_router(weather.router)
+app.include_router(satellite.router)
+app.include_router(fusion.router)
+
+# ADS-B: vessel position lookup
+def _vessel_position(mmsi):
+    v = VESSEL_MAP.get(mmsi)
+    if not v or not v.get("last_position"):
+        return None
+    return {"lat": v["last_position"]["lat"], "lon": v["last_position"]["lon"]}
+
+adsb._get_vessel_position = _vessel_position
+
+# Sanctions: vessel info lookup
+sanctions.set_vessel_info_callback(lambda mmsi: VESSEL_MAP.get(mmsi))
+
+# Fusion: wire all callbacks
+fusion._get_dark_event = lambda mmsi: next((d for d in DARK_EVENTS if d["mmsi"] == mmsi), None)
+
+def _fusion_aircraft_proximity(mmsi):
+    pos = _vessel_position(mmsi)
+    if not pos:
+        return []
+    aircraft = adsb._get_aircraft()
+    import math
+    R_nm = 3440.065
+    nearby = []
+    for ac in aircraft:
+        if ac["lat"] is None or ac["lon"] is None:
+            continue
+        dist = adsb._haversine_nm(pos["lat"], pos["lon"], ac["lat"], ac["lon"])
+        if dist <= 30.0:
+            nearby.append({**ac, "distance_nm": round(dist, 2)})
+    nearby.sort(key=lambda x: x["distance_nm"])
+    return nearby
+
+fusion._get_aircraft_proximity = _fusion_aircraft_proximity
+
+def _fusion_sanctions(mmsi):
+    v = VESSEL_MAP.get(mmsi)
+    if not v:
+        return {"is_flagged": False, "sanctions_hits": []}
+    from sanctions import _fuzzy_vessel_hits, _flag_state_hit
+    vessel_name = v.get("vessel_name") or v.get("name") or ""
+    flag_state = v.get("flag_state", "")
+    hits = []
+    if vessel_name:
+        hits.extend(_fuzzy_vessel_hits(vessel_name))
+    if flag_state:
+        fs_hit = _flag_state_hit(flag_state)
+        if fs_hit:
+            hits.append(fs_hit)
+    return {"is_flagged": len(hits) > 0, "sanctions_hits": hits}
+
+fusion._get_sanctions = _fusion_sanctions
+fusion._get_weather = lambda: weather._get_weather()
+fusion._get_overpasses = lambda: satellite._get_overpasses()
+
+def _fusion_intent(mmsi):
+    v = VESSEL_MAP.get(mmsi)
+    if not v or len(v["track"]) < 2:
+        return {"classification": "normal", "confidence": 0.5}
+    result = classify_intent(v["track"], VESSELS, DARK_EVENTS, mmsi)
+    return result
+
+fusion._get_intent = _fusion_intent
+
+def _fusion_triage():
+    return triage_dark_events(DARK_EVENTS, VESSELS, VESSEL_MAP)
+
+fusion._get_triage = _fusion_triage
+fusion._get_vessel_info = lambda mmsi: VESSEL_MAP.get(mmsi)
 
 
 if __name__ == "__main__":

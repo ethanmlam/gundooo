@@ -140,6 +140,12 @@
   },
   "hotPaths": [
     {
+      "path": "backend/main.py",
+      "accessCount": 35,
+      "lastAccessed": 1777784876391,
+      "type": "file"
+    },
+    {
       "path": "src/routes/Mission.tsx",
       "accessCount": 34,
       "lastAccessed": 1777779289721,
@@ -149,12 +155,6 @@
       "path": "src/components/mission/TacticalMap.tsx",
       "accessCount": 29,
       "lastAccessed": 1777779283881,
-      "type": "file"
-    },
-    {
-      "path": "backend/main.py",
-      "accessCount": 28,
-      "lastAccessed": 1777773684292,
       "type": "file"
     },
     {
@@ -173,6 +173,12 @@
       "path": "src/lib/backendApi.ts",
       "accessCount": 17,
       "lastAccessed": 1777775173014,
+      "type": "file"
+    },
+    {
+      "path": "backend/fusion.py",
+      "accessCount": 14,
+      "lastAccessed": 1777784851279,
       "type": "file"
     },
     {
@@ -206,6 +212,18 @@
       "type": "file"
     },
     {
+      "path": "backend/adsb.py",
+      "accessCount": 4,
+      "lastAccessed": 1777784835012,
+      "type": "file"
+    },
+    {
+      "path": "backend/satellite.py",
+      "accessCount": 4,
+      "lastAccessed": 1777784836677,
+      "type": "file"
+    },
+    {
       "path": "src/data/theaters.ts",
       "accessCount": 3,
       "lastAccessed": 1777772937395,
@@ -221,6 +239,18 @@
       "path": "index.html",
       "accessCount": 2,
       "lastAccessed": 1777774489172,
+      "type": "file"
+    },
+    {
+      "path": "backend/sanctions.py",
+      "accessCount": 2,
+      "lastAccessed": 1777784835678,
+      "type": "file"
+    },
+    {
+      "path": "backend/weather.py",
+      "accessCount": 2,
+      "lastAccessed": 1777784836427,
       "type": "file"
     },
     {
