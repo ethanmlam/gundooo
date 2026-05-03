@@ -177,7 +177,7 @@ h1, h2, h3 { margin: 0; letter-spacing: -.02em; }
 .pass-stepper strong { text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-primary); }
 .allocator-card { border-left: 2px solid var(--success); min-height: 0; }
 .allocator-title { margin-bottom: 6px; }
-.allocator-list { display: grid; align-content: start; gap: 0; min-height: 260px; height: min(360px, calc(100vh - 360px)); overflow-y: scroll; overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; scrollbar-gutter: stable; margin-top: 6px; padding-right: 4px; }
+.allocator-list { display: grid; align-content: start; gap: 0; min-height: 110px; height: min(210px, calc(100vh - 510px)); overflow-y: scroll; overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; scrollbar-gutter: stable; margin-top: 6px; padding-right: 4px; }
 .allocator-row { padding: 6px 0; border-bottom: 1px solid var(--border-subtle); display: grid; gap: 2px; }
 .allocator-row b { color: var(--text-primary); font-size: 11px; font-family: 'IBM Plex Mono', monospace; }
 .allocator-row span, .allocator-row em { color: var(--text-secondary); font-size: 10px; font-style: normal; font-family: 'IBM Plex Mono', monospace; }
