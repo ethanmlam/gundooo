@@ -113,18 +113,32 @@ def build():
         step = max(1, len(rows) // 80)
         all_rows.extend(rows[::step][:100])
 
-    # Ensure the demo/default MMSI exists. Use a real tanker/cargo track but rename it.
-    source = next((rows for _, rows in selected if (rows[0].get('VesselType') or '').startswith(('8', '7')) and len(rows) >= 12), selected[0][1])
-    source = sorted(source, key=lambda r: r['BaseDateTime'])
-    demo_rows = [convert({
-        'mmsi': r['MMSI'], 'base_date_time': r['BaseDateTime'], 'latitude': r['LAT'], 'longitude': r['LON'],
-        'sog': r['SOG'], 'cog': r['COG'], 'heading': r['Heading'], 'vessel_name': r['VesselName'],
-        'imo': r['IMO'], 'call_sign': r['CallSign'], 'vessel_type': r['VesselType'], 'status': r['Status'],
-        'length': r['Length'], 'width': r['Width'], 'draft': r['Draft'], 'cargo': r['Cargo'], 'transceiver': r['TransceiverClass'],
-    }, mmsi='309253000', name='GRACEFUL LEADER') for r in source[::max(1, len(source)//28)][:30]]
-    # Force a dark gap by removing middle timestamps from the default vessel path. The backend
-    # detects gaps by elapsed time between remaining consecutive points.
-    all_rows.extend(demo_rows[:10] + demo_rows[20:])
+    # Ensure the demo/default MMSI exists. This track is anchored in the real
+    # Long Beach geography but shaped so the prediction cloud visibly projects
+    # offshore instead of sitting on top of a stopped harbor vessel.
+    from datetime import datetime, timedelta
+    pre_times = [datetime(2025, 12, 29, 0, 0) + timedelta(minutes=8 * i) for i in range(10)]
+    post_times = [datetime(2025, 12, 29, 10, 28) + timedelta(minutes=18 * i) for i in range(10)]
+    demo_rows = []
+    for i, t in enumerate(pre_times):
+        frac = i / 9
+        demo_rows.append({
+            'MMSI': '309253000', 'BaseDateTime': t.strftime('%Y-%m-%d %H:%M:%S'),
+            'LAT': f'{33.748 - 0.062 * frac:.6f}', 'LON': f'{-118.210 - 0.118 * frac:.6f}',
+            'SOG': '12.4', 'COG': '236.0', 'Heading': '235', 'VesselName': 'GRACEFUL LEADER',
+            'IMO': 'IMO0000000', 'CallSign': 'ARGUS1', 'VesselType': '70', 'Status': '0',
+            'Length': '189', 'Width': '32', 'Draft': '8.4', 'Cargo': '70', 'TransceiverClass': 'A',
+        })
+    for i, t in enumerate(post_times):
+        frac = i / 9
+        demo_rows.append({
+            'MMSI': '309253000', 'BaseDateTime': t.strftime('%Y-%m-%d %H:%M:%S'),
+            'LAT': f'{33.055 - 0.055 * frac:.6f}', 'LON': f'{-119.145 - 0.145 * frac:.6f}',
+            'SOG': '11.8', 'COG': '238.0', 'Heading': '237', 'VesselName': 'GRACEFUL LEADER',
+            'IMO': 'IMO0000000', 'CallSign': 'ARGUS1', 'VesselType': '70', 'Status': '0',
+            'Length': '189', 'Width': '32', 'Draft': '8.4', 'Cargo': '70', 'TransceiverClass': 'A',
+        })
+    all_rows.extend(demo_rows)
 
     all_rows.sort(key=lambda r: (int(r['MMSI']) if str(r['MMSI']).isdigit() else 0, r['BaseDateTime']))
     with OUT.open('w', newline='') as fh:

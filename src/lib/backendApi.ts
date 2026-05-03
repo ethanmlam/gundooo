@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 export type ApiVessel = {
   mmsi: number;
@@ -88,6 +88,7 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export function useBackendData(selectedMmsi = DEFAULT_MMSI): BackendState {
+  const queryClient = useQueryClient();
   const vesselsQuery = useQuery({
     queryKey: ['backend', 'vessels'],
     queryFn: () => apiFetch<{ vessels: ApiVessel[]; count: number }>('/vessels'),
@@ -113,21 +114,27 @@ export function useBackendData(selectedMmsi = DEFAULT_MMSI): BackendState {
   const predictMutation = useMutation({
     mutationFn: () => apiFetch<ParticleCloud>('/predict', {
       method: 'POST',
-      body: JSON.stringify({ mmsi: selectedMmsi }),
+      body: JSON.stringify({ mmsi: selectedMmsi, dt_hours: 6, n_particles: 1000 }),
     }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['backend', 'recommend', selectedMmsi] }),
   });
 
   const updateMutation = useMutation({
-    mutationFn: () => apiFetch<ParticleCloud>('/update', {
-      method: 'POST',
-      body: JSON.stringify({
-        mmsi: selectedMmsi,
-        observation_lat: 34.1,
-        observation_lon: -119.3,
-        sensor_type: 'SAR',
-        confidence: 0.8,
-      }),
-    }),
+    mutationFn: () => {
+      const topTasking = recommendationQuery.data?.taskings?.[0];
+      const fallbackEvent = darkEventsQuery.data?.dark_events?.find((event) => event.mmsi === selectedMmsi);
+      return apiFetch<ParticleCloud>('/update', {
+        method: 'POST',
+        body: JSON.stringify({
+          mmsi: selectedMmsi,
+          observation_lat: topTasking?.center_lat ?? (fallbackEvent ? fallbackEvent.last_known_lat - 0.35 : 33.2),
+          observation_lon: topTasking?.center_lon ?? (fallbackEvent ? fallbackEvent.last_known_lon - 0.45 : -119.0),
+          sensor_type: topTasking?.sensor_id ?? 'SAR',
+          confidence: 0.92,
+        }),
+      });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['backend', 'recommend', selectedMmsi] }),
   });
 
   const vessels = vesselsQuery.data?.vessels ?? [];
