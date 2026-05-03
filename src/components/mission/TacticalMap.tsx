@@ -1,7 +1,7 @@
 import DeckGL from '@deck.gl/react';
 import { useMemo, useState } from 'react';
 import { Map } from 'react-map-gl/maplibre';
-import { PathLayer, PolygonLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers';
+import { IconLayer, PathLayer, PolygonLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { missionScenario, type MissionScenario } from '../../data/scenario';
 import { useLiveAis } from '../../lib/useLiveAis';
@@ -86,6 +86,61 @@ function taskingPosition(tasking: SensorTasking) {
   return [tasking.center_lon, tasking.center_lat];
 }
 
+function vesselCategory(type?: string) {
+  const value = (type || '').toLowerCase();
+  if (value.includes('cargo')) return 'cargo';
+  if (value.includes('tanker')) return 'tanker';
+  if (value.includes('passenger')) return 'passenger';
+  if (value.includes('high_speed')) return 'highSpeed';
+  if (['tug', 'towing', 'towing_large', 'pilot', 'sar', 'port_tender', 'law_enforcement', 'dredging', 'diving_ops'].some((x) => value.includes(x))) return 'special';
+  if (value.includes('fishing')) return 'fishing';
+  if (value.includes('pleasure') || value.includes('sailing')) return 'pleasure';
+  return 'other';
+}
+
+const CATEGORY_COLORS: Record<string, [number, number, number, number]> = {
+  cargo: [34, 197, 94, 235],
+  tanker: [245, 158, 11, 235],
+  passenger: [59, 130, 246, 235],
+  highSpeed: [250, 204, 21, 235],
+  special: [45, 212, 191, 235],
+  fishing: [249, 115, 22, 235],
+  pleasure: [217, 70, 239, 235],
+  other: [148, 163, 184, 220],
+};
+
+function vesselColor(vessel: ApiVessel, selectedMmsi?: number) {
+  if (vessel.mmsi === selectedMmsi) return [245, 158, 11, 255] as [number, number, number, number];
+  return CATEGORY_COLORS[vesselCategory(vessel.vessel_type)];
+}
+
+function vesselAngle(vessel: ApiVessel) {
+  const speed = vessel.last_position.speed_knots ?? 0;
+  const heading = vessel.last_position.heading;
+  if (speed < 0.8 || heading == null || Number.isNaN(Number(heading))) return 0;
+  return Number(heading);
+}
+
+function vesselIcon(vessel: ApiVessel) {
+  const speed = vessel.last_position.speed_knots ?? 0;
+  return speed < 0.8 ? 'stopped' : 'arrow';
+}
+
+const VESSEL_ICON_ATLAS = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="64" viewBox="0 0 128 64">
+  <g id="arrow" transform="translate(0,0)">
+    <path d="M32 4 L54 56 L32 45 L10 56 Z" fill="white"/>
+  </g>
+  <g id="stopped" transform="translate(64,0)">
+    <circle cx="32" cy="32" r="19" fill="white"/>
+  </g>
+</svg>`);
+
+const VESSEL_ICON_MAPPING = {
+  arrow: { x: 0, y: 0, width: 64, height: 64, anchorX: 32, anchorY: 32, mask: true },
+  stopped: { x: 64, y: 0, width: 64, height: 64, anchorX: 32, anchorY: 32, mask: true },
+};
+
 export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi }: Props) {
   const [basemap, setBasemap] = useState<BasemapKey>('dark');
   const mapStyle = useMemo(() => BASEMAPS[basemap].style, [basemap]);
@@ -165,16 +220,29 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi 
       stroked: false,
     }),
     new ScatterplotLayer({
-      id: 'backend-vessels',
-      data: backendVessels,
+      id: 'backend-vessel-halos',
+      data: backendVessels.filter((v) => (v.last_position.speed_knots ?? 0) < 0.8 || v.mmsi === backend?.selectedMmsi),
       getPosition: vesselPosition,
-      getRadius: (d: ApiVessel) => d.last_position.speed_knots != null && d.last_position.speed_knots < 1 ? 1200 : 850,
-      radiusMinPixels: 4,
-      radiusMaxPixels: 11,
-      getFillColor: (d: ApiVessel) => d.mmsi === backend?.selectedMmsi ? [245, 158, 11, 235] : d.last_position.speed_knots != null && d.last_position.speed_knots < 1 ? [251, 191, 36, 210] : [125, 211, 252, 200],
-      getLineColor: [255, 255, 255, 215],
-      lineWidthMinPixels: 1,
+      getRadius: (d: ApiVessel) => d.mmsi === backend?.selectedMmsi ? 1450 : 900,
+      radiusMinPixels: 7,
+      radiusMaxPixels: 17,
+      getFillColor: [15, 23, 42, 80],
+      getLineColor: (d: ApiVessel) => vesselColor(d, backend?.selectedMmsi),
+      lineWidthMinPixels: 2,
       stroked: true,
+    }),
+    new IconLayer({
+      id: 'backend-vessel-arrows',
+      data: backendVessels,
+      iconAtlas: VESSEL_ICON_ATLAS,
+      iconMapping: VESSEL_ICON_MAPPING,
+      getIcon: vesselIcon,
+      getPosition: vesselPosition,
+      getAngle: vesselAngle,
+      getSize: (d: ApiVessel) => d.mmsi === backend?.selectedMmsi ? 22 : 15,
+      sizeMinPixels: 9,
+      sizeMaxPixels: 24,
+      getColor: (d: ApiVessel) => vesselColor(d, backend?.selectedMmsi),
       pickable: true,
       onClick: ({ object }: any) => object?.mmsi && onSelectMmsi?.(object.mmsi),
     }),
