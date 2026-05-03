@@ -14,7 +14,7 @@ import { theaters } from '../data/theaters';
 import { missionScenario, scenariosByTheater, type MissionScenario } from '../data/scenario';
 import { getRecommendedSandboxSensor, hormuzSensorSandbox, type HormuzSensorSandbox } from '../data/sensorSandbox';
 import { useAppStore } from '../lib/store';
-import { useAllocation, useBackendData, useFusion, useSearchLoop, type AllocationResult, type BackendState, type FusionResult, type SearchLoopData } from '../lib/backendApi';
+import { DEFAULT_SENSOR_AVAILABILITY, useAllocation, useBackendData, useFusion, useSearchLoop, useSensorAvailability, type AllocationResult, type BackendState, type FusionResult, type SearchLoopData, type SensorAvailability } from '../lib/backendApi';
 import { useLiveAis, type LiveAisSnapshot, type LiveAisVessel } from '../lib/useLiveAis';
 
 type SidebarProps = {
@@ -81,6 +81,63 @@ function ThreatQueueCard({ backend }: { backend: BackendState }) {
       </button>)}
       {!rows.length && <p style={{ padding: '0 12px 8px' }}>Backend online, waiting for ranked dark events.</p>}
     </div>
+  </section>;
+}
+
+const SENSOR_EXPLAINERS: Record<string, { label: string; detail: string; constraint: string }> = {
+  'SAR-SPOTLIGHT': {
+    label: 'SAR Spotlight',
+    detail: 'High-resolution all-weather image of a small box.',
+    constraint: 'Best after the search area is already tight.',
+  },
+  'SAR-STRIPMAP': {
+    label: 'SAR Stripmap',
+    detail: 'Wider SAR swath for diffuse uncertainty.',
+    constraint: 'Lower resolution and slower revisit.',
+  },
+  'ELINT-PASS': {
+    label: 'ELINT Pass',
+    detail: 'Listens for radar/comms emissions from an AIS-dark target.',
+    constraint: 'No help if the vessel is emission-controlled.',
+  },
+  'OPIR-WIDE': {
+    label: 'OPIR Wide',
+    detail: 'Broad thermal cueing over a large area.',
+    constraint: 'Lower precision and weather/cloud sensitivity.',
+  },
+};
+
+function SensorAvailabilityCard({ sensors, onChange }: { sensors: SensorAvailability[]; onChange: (sensors: SensorAvailability[]) => void }) {
+  const updatePasses = (sensorId: string, passes: number) => {
+    onChange(sensors.map((sensor) => sensor.sensor_id === sensorId ? { ...sensor, passes_remaining: Math.max(0, Math.min(4, passes)) } : sensor));
+  };
+  const reset = () => onChange(DEFAULT_SENSOR_AVAILABILITY);
+  return <section className="stripe-card compact-card sensor-availability-card">
+    <div className="stripe-card-head compact">
+      <div className="icon-tile"><Database03Icon width={17} height={17}/></div>
+      <div><span>Run permissions</span><h3>Available sensor passes</h3></div>
+    </div>
+    <p>These toggles are the assets the operator is allowed to spend. The allocator recomputes around this budget.</p>
+    <div className="sensor-availability-list">
+      {sensors.map((sensor) => {
+        const meta = SENSOR_EXPLAINERS[sensor.sensor_id] ?? { label: sensor.sensor_id, detail: 'Collection asset', constraint: 'Constraint unknown' };
+        const enabled = sensor.passes_remaining > 0;
+        return <div className={`sensor-availability-row ${enabled ? 'enabled' : 'disabled'}`} key={sensor.sensor_id}>
+          <button className="sensor-toggle" onClick={() => updatePasses(sensor.sensor_id, enabled ? 0 : 1)}>{enabled ? 'ON' : 'OFF'}</button>
+          <div className="sensor-copy">
+            <b>{meta.label}</b>
+            <span>{meta.detail}</span>
+            <em>{meta.constraint}</em>
+          </div>
+          <div className="pass-stepper">
+            <button onClick={() => updatePasses(sensor.sensor_id, sensor.passes_remaining - 1)}>-</button>
+            <strong>{sensor.passes_remaining}</strong>
+            <button onClick={() => updatePasses(sensor.sensor_id, sensor.passes_remaining + 1)}>+</button>
+          </div>
+        </div>;
+      })}
+    </div>
+    <button className="secondary-action" onClick={reset}>Reset permissions</button>
   </section>;
 }
 
@@ -265,7 +322,8 @@ export default function Mission() {
   const selectedMmsi = useAppStore((s) => s.selectedMmsi);
   const setSelectedMmsi = useAppStore((s) => s.setSelectedMmsi);
   const backend = useBackendData(selectedMmsi);
-  const allocation = useAllocation();
+  const [availableSensors, setAvailableSensors] = useSensorAvailability();
+  const allocation = useAllocation(availableSensors);
   const fusion = useFusion(!isHormuz ? selectedMmsi : null, !isHormuz && backend.isBackendOnline);
   const displayBackend = isHormuz ? { ...backend, vessels: [], darkEvents: [], triage: [], isBackendOnline: false, isLoading: false, statusText: 'Hormuz exercise sandbox' } : backend;
   const hasPrediction = backend.prediction != null && backend.predictedMmsi === backend.selectedMmsi;
@@ -309,6 +367,7 @@ export default function Mission() {
               </>
             : <>
                 <ThreatQueueCard backend={backend} />
+                <SensorAvailabilityCard sensors={availableSensors} onChange={setAvailableSensors} />
                 <AllocatorCard allocation={allocation} />
                 <NextStepCard backend={backend} searchLoop={searchLoop} showAfterPolygon={showAfterPolygon} onSimulate={() => setShowAfterPolygon(true)} />
               </>} 

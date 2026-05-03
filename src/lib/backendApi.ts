@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import type { Dispatch, SetStateAction } from 'react';
 
 export type ApiVessel = {
   mmsi: number;
@@ -74,10 +75,15 @@ export type Allocation = {
   rationale: string;
 };
 
+export type SensorAvailability = {
+  sensor_id: string;
+  passes_remaining: number;
+};
+
 export type AllocationResult = {
   allocations: Allocation[];
   unassigned_vessels: Array<{ mmsi: number; vessel_name?: string; threat_score?: number; note?: string }>;
-  sensors_remaining: Array<{ sensor_id: string; passes_remaining: number }>;
+  sensors_remaining: SensorAvailability[];
   total_expected_information_gain: number;
   optimization_method: string;
 };
@@ -224,10 +230,26 @@ export function useSearchLoop(mmsi: number | null, enabled = false) {
   return query.data ?? null;
 }
 
-export function useAllocation() {
+export const DEFAULT_SENSOR_AVAILABILITY: SensorAvailability[] = [
+  { sensor_id: 'SAR-SPOTLIGHT', passes_remaining: 2 },
+  { sensor_id: 'SAR-STRIPMAP', passes_remaining: 1 },
+  { sensor_id: 'ELINT-PASS', passes_remaining: 1 },
+  { sensor_id: 'OPIR-WIDE', passes_remaining: 1 },
+];
+
+export function useSensorAvailability(): [SensorAvailability[], Dispatch<SetStateAction<SensorAvailability[]>>] {
+  const [availableSensors, setAvailableSensors] = useState<SensorAvailability[]>(DEFAULT_SENSOR_AVAILABILITY);
+  return [availableSensors, setAvailableSensors];
+}
+
+export function useAllocation(availableSensors = DEFAULT_SENSOR_AVAILABILITY) {
+  const activeSensors = availableSensors.filter((sensor) => sensor.passes_remaining > 0);
   const query = useQuery({
-    queryKey: ['allocator', 'default'],
-    queryFn: () => apiFetch<AllocationResult>('/allocate/default'),
+    queryKey: ['allocator', 'custom', activeSensors],
+    queryFn: () => apiFetch<AllocationResult>('/allocate', {
+      method: 'POST',
+      body: JSON.stringify({ available_sensors: activeSensors, top_n_vessels: 5 }),
+    }),
     refetchInterval: 15000,
     retry: 1,
   });

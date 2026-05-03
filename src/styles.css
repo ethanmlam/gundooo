@@ -183,6 +183,19 @@ h1, h2, h3 { margin: 0; letter-spacing: -.02em; }
 .anomaly-row span { color: var(--text-secondary); font-size: 10px; font-family: 'IBM Plex Mono', monospace; }
 .anomaly-row em { color: var(--accent); font-size: 10px; font-style: normal; font-weight: 700; font-family: 'IBM Plex Mono', monospace; }
 .action-stack { display: grid; gap: 6px; padding: 10px 12px; }
+.sensor-availability-card { border-left: 2px solid var(--info); }
+.sensor-availability-list { display: grid; gap: 0; margin-top: 8px; border-top: 1px solid var(--border-subtle); }
+.sensor-availability-row { display: grid; grid-template-columns: 34px 1fr 56px; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-subtle); }
+.sensor-availability-row.disabled { opacity: .55; }
+.sensor-toggle { border: 1px solid var(--border-default); border-radius: 2px; background: transparent; color: var(--text-secondary); font-size: 9px; font-weight: 700; padding: 4px 0; font-family: 'IBM Plex Mono', monospace; }
+.sensor-availability-row.enabled .sensor-toggle { color: #07100a; background: var(--success); border-color: var(--success); }
+.sensor-copy { display: grid; gap: 2px; min-width: 0; }
+.sensor-copy b { color: var(--text-primary); font-size: 11px; }
+.sensor-copy span, .sensor-copy em { color: var(--text-secondary); font-size: 10px; line-height: 1.25; font-style: normal; }
+.sensor-copy em { color: var(--accent); }
+.pass-stepper { display: grid; grid-template-columns: 16px 1fr 16px; align-items: center; gap: 2px; }
+.pass-stepper button { width: 16px; height: 18px; border: 1px solid var(--border-default); background: transparent; color: var(--text-secondary); border-radius: 2px; padding: 0; font-size: 11px; }
+.pass-stepper strong { text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-primary); }
 .allocator-card { border-left: 2px solid var(--success); }
 .allocator-list { display: grid; gap: 0; max-height: 220px; overflow: auto; margin-top: 6px; }
 .allocator-row { padding: 7px 0; border-bottom: 1px solid var(--border-subtle); display: grid; gap: 2px; }
