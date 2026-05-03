@@ -108,7 +108,7 @@ function NextStepCard({ backend, searchLoop, showAfterPolygon, onSimulate }: { b
       <button className="primary-action" onClick={onSimulate} disabled={showAfterPolygon} style={{ marginTop: 6 }}>
         <Target05Icon width={15} height={15}/> {showAfterPolygon ? 'Sensor update applied' : 'Simulate sensor update'}
       </button>
-      {showAfterPolygon && <p style={{ marginTop: 6, fontSize: '13px', fontWeight: 700, opacity: 0.85 }}>
+      {showAfterPolygon && <p className="mono" style={{ marginTop: 6, fontSize: '11px', fontWeight: 600, opacity: 0.85 }}>
         {searchLoop.recommended_sensor.sensor_id} recommended · {Math.round(searchLoop.area_reduction_pct)}% area reduction
       </p>}
     </>}
@@ -175,7 +175,7 @@ export default function Mission() {
   const setSelectedMmsi = useAppStore((s) => s.setSelectedMmsi);
   const backend = useBackendData(selectedMmsi);
   const hasPrediction = backend.prediction != null && backend.predictedMmsi === backend.selectedMmsi;
-  const searchLoop = useSearchLoop(hasPrediction ? backend.selectedMmsi : null);
+  const searchLoop = useSearchLoop(hasPrediction ? backend.selectedMmsi : null, backend.searchLoopEnabled);
   const [showAfterPolygon, setShowAfterPolygon] = useState(false);
   useEffect(() => setShowAfterPolygon(false), [selectedMmsi]);
   const liveEnabled = !backend.isBackendOnline && (scenario.id === 'strait-of-hormuz' || scenario.id === 'persian-gulf');
@@ -186,7 +186,7 @@ export default function Mission() {
   return <main className="mission-page c2-layout lean-layout">
     <header className="mission-topbar panel">
       <Link to="/theaters"><ArrowLeftIcon width={15} height={15}/> Theaters</Link>
-      <div><h1>Gundooo | {theater.name} Vessel Watch</h1><p>Ships on the map are pre-profiled by movement, vessel type, and chokepoint context.</p></div>
+      <div><h1>GUNDOOO / {theater.name} Vessel Watch</h1><p>Ships on the map are pre-profiled by movement, vessel type, and chokepoint context.</p></div>
       <div className="mission-status"><span /> {isInitialLoad ? 'CONNECTING' : backend.isBackendOnline ? 'LIVE API' : 'REPLAY'}</div>
     </header>
 

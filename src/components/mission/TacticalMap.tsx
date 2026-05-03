@@ -157,7 +157,7 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
   const layers = [
     new PolygonLayer({
       id: 'zone',
-      data: scenario.zones,
+      data: backend?.isBackendOnline ? [] : scenario.zones,
       getPolygon: (d: any) => d.polygon,
       getFillColor: [37, 99, 235, 20],
       getLineColor: [56, 189, 248, 115],
@@ -166,7 +166,7 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
     }),
     new PolygonLayer({
       id: 'radar-cone',
-      data: [{ polygon: scenario.radarCone }],
+      data: backend?.isBackendOnline ? [] : [{ polygon: scenario.radarCone }],
       getPolygon: (d: any) => d.polygon,
       getFillColor: [212, 165, 82, 34],
       getLineColor: [212, 165, 82, 160],

@@ -61,6 +61,7 @@ export type BackendState = {
   prediction: ParticleCloud | null;
   predictedMmsi: number | null;
   isPredicting: boolean;
+  searchLoopEnabled: boolean;
 };
 
 export const DEFAULT_MMSI = 309253000;
@@ -85,10 +86,12 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 export function useBackendData(selectedMmsi = DEFAULT_MMSI): BackendState {
   const [prediction, setPrediction] = useState<ParticleCloud | null>(null);
   const [predictedMmsi, setPredictedMmsi] = useState<number | null>(null);
+  const [searchLoopEnabled, setSearchLoopEnabled] = useState(false);
 
   useEffect(() => {
     setPrediction(null);
     setPredictedMmsi(null);
+    setSearchLoopEnabled(false);
   }, [selectedMmsi]);
 
   const vesselsQuery = useQuery({
@@ -113,6 +116,7 @@ export function useBackendData(selectedMmsi = DEFAULT_MMSI): BackendState {
     onSuccess: (data) => {
       setPrediction(data);
       setPredictedMmsi(selectedMmsi);
+      setSearchLoopEnabled(true);
     },
   });
 
@@ -140,14 +144,15 @@ export function useBackendData(selectedMmsi = DEFAULT_MMSI): BackendState {
     prediction,
     predictedMmsi,
     isPredicting: predictMutation.isPending,
+    searchLoopEnabled,
   };
 }
 
-export function useSearchLoop(mmsi: number | null) {
+export function useSearchLoop(mmsi: number | null, enabled = false) {
   const query = useQuery({
     queryKey: ['search-loop', mmsi],
     queryFn: () => apiFetch<SearchLoopData>(`/search-loop/${mmsi}`),
-    enabled: mmsi != null,
+    enabled: mmsi != null && enabled,
     refetchInterval: 30000,
     retry: 1,
   });

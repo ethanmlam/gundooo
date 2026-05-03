@@ -147,14 +147,14 @@
     },
     {
       "path": "src/routes/Mission.tsx",
-      "accessCount": 23,
-      "lastAccessed": 1777773692589,
+      "accessCount": 28,
+      "lastAccessed": 1777775143320,
       "type": "file"
     },
     {
       "path": "src/components/mission/TacticalMap.tsx",
-      "accessCount": 22,
-      "lastAccessed": 1777773687491,
+      "accessCount": 25,
+      "lastAccessed": 1777775548983,
       "type": "file"
     },
     {
@@ -171,14 +171,26 @@
     },
     {
       "path": "src/lib/backendApi.ts",
-      "accessCount": 9,
-      "lastAccessed": 1777773255970,
+      "accessCount": 17,
+      "lastAccessed": 1777775173014,
       "type": "file"
     },
     {
       "path": "src/data/scenario.ts",
       "accessCount": 5,
       "lastAccessed": 1777772935923,
+      "type": "file"
+    },
+    {
+      "path": "src/styles.css",
+      "accessCount": 5,
+      "lastAccessed": 1777774863762,
+      "type": "file"
+    },
+    {
+      "path": "src/routes/Landing.tsx",
+      "accessCount": 5,
+      "lastAccessed": 1777774879252,
       "type": "file"
     },
     {
@@ -194,21 +206,15 @@
       "type": "file"
     },
     {
-      "path": "src/routes/Landing.tsx",
-      "accessCount": 3,
-      "lastAccessed": 1777771750771,
-      "type": "file"
-    },
-    {
       "path": "src/data/theaters.ts",
       "accessCount": 3,
       "lastAccessed": 1777772937395,
       "type": "file"
     },
     {
-      "path": "src/styles.css",
-      "accessCount": 3,
-      "lastAccessed": 1777773699088,
+      "path": "index.html",
+      "accessCount": 2,
+      "lastAccessed": 1777774489172,
       "type": "file"
     },
     {
@@ -329,12 +335,6 @@
       "path": "src/components/charts/FeedVolumeChart.tsx",
       "accessCount": 1,
       "lastAccessed": 1777768223016,
-      "type": "file"
-    },
-    {
-      "path": "index.html",
-      "accessCount": 1,
-      "lastAccessed": 1777768223797,
       "type": "file"
     }
   ],
