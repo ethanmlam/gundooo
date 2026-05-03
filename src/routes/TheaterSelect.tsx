@@ -8,14 +8,13 @@ export default function TheaterSelect() {
   return <main className="theater-page">
     <header className="app-header">
       <button onClick={() => navigate('/')}><ArrowLeftIcon width={15} height={15}/> Back</button>
-      <div><h1>Theaters</h1><p>Two demos only: Hormuz for military impact, Long Beach for familiar port traffic.</p></div>
+      <div><h1>Theaters</h1></div>
     </header>
     <section className="globe-shell minimal-globe-shell">
       <div className="globe-card"><TheaterGlobe theaters={theaters} onSelect={(t) => navigate(`/mission/${t.id}`)} /></div>
       <aside className="theater-list panel selector-sidebar simple-selector">
         <div className="selector-heading">
           <span>Choose theater</span>
-          <h2>Ship risk watch</h2>
         </div>
         {theaters.map((theater) => <button className="theater-row" key={theater.id} onClick={() => navigate(`/mission/${theater.id}`)}>
           <div className={`risk ${theater.risk.toLowerCase()}`}>{theater.risk}</div>

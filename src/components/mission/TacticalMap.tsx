@@ -81,32 +81,14 @@ function darkEventPosition(event: DarkEvent) {
   return [event.last_known_lon, event.last_known_lat];
 }
 
-function vesselCategory(type?: string) {
-  const value = (type || '').toLowerCase();
-  if (value.includes('cargo')) return 'cargo';
-  if (value.includes('tanker')) return 'tanker';
-  if (value.includes('passenger')) return 'passenger';
-  if (value.includes('high_speed')) return 'highSpeed';
-  if (['tug', 'towing', 'towing_large', 'pilot', 'sar', 'port_tender', 'law_enforcement', 'dredging', 'diving_ops'].some((x) => value.includes(x))) return 'special';
-  if (value.includes('fishing')) return 'fishing';
-  if (value.includes('pleasure') || value.includes('sailing')) return 'pleasure';
-  return 'other';
-}
+const VESSEL_DEFAULT: [number, number, number, number] = [148, 163, 184, 115];
+const VESSEL_SELECTED: [number, number, number, number] = [196, 145, 92, 255];
+const VESSEL_THREAT: [number, number, number, number] = [229, 72, 77, 89];
 
-const CATEGORY_COLORS: Record<string, [number, number, number, number]> = {
-  cargo: [34, 197, 94, 235],
-  tanker: [245, 158, 11, 235],
-  passenger: [59, 130, 246, 235],
-  highSpeed: [250, 204, 21, 235],
-  special: [45, 212, 191, 235],
-  fishing: [249, 115, 22, 235],
-  pleasure: [217, 70, 239, 235],
-  other: [148, 163, 184, 220],
-};
-
-function vesselColor(vessel: ApiVessel, selectedMmsi?: number) {
-  if (vessel.mmsi === selectedMmsi) return [245, 158, 11, 255] as [number, number, number, number];
-  return CATEGORY_COLORS[vesselCategory(vessel.vessel_type)];
+function vesselColor(vessel: ApiVessel, selectedMmsi?: number, darkEventMmsis?: Set<number>): [number, number, number, number] {
+  if (vessel.mmsi === selectedMmsi) return VESSEL_SELECTED;
+  if (darkEventMmsis?.has(vessel.mmsi)) return VESSEL_THREAT;
+  return VESSEL_DEFAULT;
 }
 
 function vesselAngle(vessel: ApiVessel) {
@@ -234,6 +216,7 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
   const liveVessels = isFresh ? snapshot.vessels : [];
   const backendVessels = backend?.vessels ?? [];
   const darkEvents = backend?.darkEvents ?? [];
+  const darkEventMmsis = useMemo(() => new Set(darkEvents.map((e) => e.mmsi)), [darkEvents]);
   const particles = particleData(backend?.predictedMmsi === backend?.selectedMmsi ? backend?.prediction ?? null : null);
   const beforePoly = particles.length > 0 ? searchLoop?.before_polygon?.geometry?.coordinates?.[0] ?? null : null;
   const afterPoly = showAfterPolygon ? searchLoop?.after_polygon?.geometry?.coordinates?.[0] ?? null : null;
@@ -255,8 +238,8 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
       id: 'radar-cone',
       data: backend?.isBackendOnline ? [] : [{ polygon: scenario.radarCone }],
       getPolygon: (d: any) => d.polygon,
-      getFillColor: [212, 165, 82, 34],
-      getLineColor: [212, 165, 82, 160],
+      getFillColor: [196, 145, 92, 34],
+      getLineColor: [196, 145, 92, 160],
       getLineWidth: 1,
       lineWidthMinPixels: 1,
     }),
@@ -294,8 +277,8 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
       id: 'scenario-tracks',
       data: backend?.isBackendOnline ? [] : scenario.vesselTracks,
       getPath: (d: any) => d.path,
-      getColor: (d: any) => d.severity === 'HIGH' ? [245, 158, 11, 230] : d.severity === 'MED' ? [212, 165, 82, 210] : [88, 126, 170, 160],
-      getWidth: (d: any) => d.severity === 'HIGH' ? 3 : 2,
+      getColor: [148, 163, 184, 30],
+      getWidth: 1.5,
       widthMinPixels: 1,
       rounded: true,
     }),
@@ -312,8 +295,8 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
       id: 'ghost-track',
       data: backend?.isBackendOnline ? [] : [{ path: scenario.ghostTrack }],
       getPath: (d: any) => d.path,
-      getColor: [120, 220, 165, 210],
-      getWidth: 2,
+      getColor: [148, 163, 184, 30],
+      getWidth: 1.5,
       widthMinPixels: 1,
       rounded: true,
     }),
@@ -330,8 +313,8 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
       id: 'search-region-before',
       data: beforePoly ? [{ polygon: beforePoly }] : [],
       getPolygon: (d: any) => d.polygon,
-      getFillColor: [56, 189, 248, 25],
-      getLineColor: [56, 189, 248, 180],
+      getFillColor: [196, 145, 92, 38],
+      getLineColor: [196, 145, 92, 153],
       getLineWidth: 2,
       lineWidthMinPixels: 2,
       stroked: true,
@@ -340,8 +323,8 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
       id: 'search-region-after',
       data: afterPoly ? [{ polygon: afterPoly }] : [],
       getPolygon: (d: any) => d.polygon,
-      getFillColor: [52, 211, 153, 20],
-      getLineColor: [52, 211, 153, 180],
+      getFillColor: [70, 167, 88, 30],
+      getLineColor: [70, 167, 88, 128],
       getLineWidth: 2,
       lineWidthMinPixels: 2,
       stroked: true,
@@ -353,8 +336,7 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
       getRadius: 80,
       radiusMinPixels: 2,
       radiusMaxPixels: 5,
-      getFillColor: (d: any) => d.weight > 0.7 ? [239, 68, 68, 200] : d.weight > 0.3 ? [251, 191, 36, 160] : [56, 189, 248, 100],
-      getLineColor: [226, 232, 240, 60],
+      getFillColor: (d: any) => d.weight > 0.7 ? [229, 72, 77, 200] : d.weight > 0.3 ? [196, 145, 92, 160] : [148, 163, 184, 89],
       stroked: false,
     }),
     new ScatterplotLayer({
@@ -476,7 +458,7 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
       getColor: [226, 232, 240, 240],
       getPixelOffset: [0, -18],
       background: true,
-      getBackgroundColor: [3, 7, 18, 225],
+      getBackgroundColor: [6, 9, 15, 225],
       backgroundPadding: [4, 2],
     }),
     new TextLayer({
@@ -491,7 +473,7 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
       getColor: [226, 232, 240, 230],
       getPixelOffset: [0, 13],
       background: true,
-      getBackgroundColor: [3, 7, 18, 220],
+      getBackgroundColor: [6, 9, 15, 220],
       backgroundPadding: [4, 2],
     }),
     new TextLayer({
@@ -515,10 +497,10 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
       getPosition: (d: any) => d.position,
       getText: (d: any) => d.text,
       getSize: 12,
-      getColor: [232, 236, 242, 235],
+      getColor: [226, 232, 240, 235],
       getPixelOffset: [0, -18],
       background: true,
-      getBackgroundColor: [5, 6, 10, 220],
+      getBackgroundColor: [6, 9, 15, 220],
       backgroundPadding: [5, 3],
     }),
   ];

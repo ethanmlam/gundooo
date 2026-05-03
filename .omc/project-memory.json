@@ -140,21 +140,21 @@
   },
   "hotPaths": [
     {
-      "path": "backend/main.py",
-      "accessCount": 28,
-      "lastAccessed": 1777773684292,
-      "type": "file"
-    },
-    {
       "path": "src/routes/Mission.tsx",
-      "accessCount": 28,
-      "lastAccessed": 1777775143320,
+      "accessCount": 34,
+      "lastAccessed": 1777779289721,
       "type": "file"
     },
     {
       "path": "src/components/mission/TacticalMap.tsx",
-      "accessCount": 25,
-      "lastAccessed": 1777775548983,
+      "accessCount": 29,
+      "lastAccessed": 1777779283881,
+      "type": "file"
+    },
+    {
+      "path": "backend/main.py",
+      "accessCount": 28,
+      "lastAccessed": 1777773684292,
       "type": "file"
     },
     {
@@ -176,21 +176,21 @@
       "type": "file"
     },
     {
-      "path": "src/data/scenario.ts",
-      "accessCount": 5,
-      "lastAccessed": 1777772935923,
-      "type": "file"
-    },
-    {
       "path": "src/styles.css",
-      "accessCount": 5,
-      "lastAccessed": 1777774863762,
+      "accessCount": 7,
+      "lastAccessed": 1777778763199,
       "type": "file"
     },
     {
       "path": "src/routes/Landing.tsx",
+      "accessCount": 7,
+      "lastAccessed": 1777778774950,
+      "type": "file"
+    },
+    {
+      "path": "src/data/scenario.ts",
       "accessCount": 5,
-      "lastAccessed": 1777774879252,
+      "lastAccessed": 1777772935923,
       "type": "file"
     },
     {
@@ -209,6 +209,12 @@
       "path": "src/data/theaters.ts",
       "accessCount": 3,
       "lastAccessed": 1777772937395,
+      "type": "file"
+    },
+    {
+      "path": "src/routes/TheaterSelect.tsx",
+      "accessCount": 3,
+      "lastAccessed": 1777778780986,
       "type": "file"
     },
     {
@@ -251,12 +257,6 @@
       "path": "src/app/router.tsx",
       "accessCount": 1,
       "lastAccessed": 1777768198267,
-      "type": "file"
-    },
-    {
-      "path": "src/routes/TheaterSelect.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1777768203648,
       "type": "file"
     },
     {
@@ -335,6 +335,12 @@
       "path": "src/components/charts/FeedVolumeChart.tsx",
       "accessCount": 1,
       "lastAccessed": 1777768223016,
+      "type": "file"
+    },
+    {
+      "path": "DESIGN.md",
+      "accessCount": 1,
+      "lastAccessed": 1777777977871,
       "type": "file"
     }
   ],
