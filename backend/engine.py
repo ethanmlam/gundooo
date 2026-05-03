@@ -25,6 +25,20 @@ class Recommendation(TypedDict):
     prediction_region: dict
 
 
+def _probably_water_socal(lat: NDArray, lon: NDArray) -> NDArray:
+    """Coarse water mask for the LA / Long Beach replay demo.
+
+    This is intentionally conservative: keep open Pacific points and harbor
+    water, reject the obvious inland/north/east land splatter from the Monte
+    Carlo cloud. It is not a nautical coastline model.
+    """
+    open_pacific = (lat < 33.66) | (lon < -118.48)
+    outer_approach = (lat < 33.78) & (lon < -118.28)
+    harbor_water = (lat >= 33.68) & (lat <= 33.79) & (lon >= -118.31) & (lon <= -118.12)
+    not_far_inland = (lat < 33.95) & (lon < -118.05)
+    return (open_pacific | outer_approach | harbor_water) & not_far_inland
+
+
 def particle_propagate(
     lat: float,
     lon: float,
@@ -33,17 +47,34 @@ def particle_propagate(
     dt_hours: float,
     n_particles: int = 1000,
 ) -> ParticleCloud:
-    headings = np.random.normal(heading, 30.0, n_particles) % 360
-    speeds = np.abs(np.random.normal(speed_knots, 3.0, n_particles))
+    # Oversample, then keep only plausible water points for the Long Beach
+    # replay. This keeps the visual cloud from spilling over land while still
+    # preserving stochastic uncertainty.
+    pool = max(n_particles * 5, 2500)
+    headings_all = np.random.normal(heading, 20.0, pool) % 360
+    speeds_all = np.clip(np.random.normal(speed_knots, max(1.2, speed_knots * 0.16), pool), 0.2, None)
 
-    speed_deg_per_hour = speeds / 60.0
-    heading_rad = np.deg2rad(headings)
+    speed_deg_per_hour = speeds_all / 60.0
+    heading_rad = np.deg2rad(headings_all)
 
     dlat = speed_deg_per_hour * np.cos(heading_rad) * dt_hours
     dlon = speed_deg_per_hour * np.sin(heading_rad) * dt_hours / np.cos(np.deg2rad(lat))
 
-    lats = lat + dlat
-    lons = lon + dlon
+    lats_all = lat + dlat
+    lons_all = lon + dlon
+    keep = _probably_water_socal(lats_all, lons_all)
+    indices = np.where(keep)[0]
+    if len(indices) < n_particles:
+        # Fallback: take the most seaward points if the mask is too strict.
+        seaward_score = (-lons_all) + np.maximum(0, 33.75 - lats_all)
+        indices = np.argsort(seaward_score)[-n_particles:]
+    else:
+        indices = np.random.choice(indices, size=n_particles, replace=False)
+
+    lats = lats_all[indices]
+    lons = lons_all[indices]
+    headings = headings_all[indices]
+    speeds = speeds_all[indices]
     weights = np.ones(n_particles) / n_particles
 
     return ParticleCloud(

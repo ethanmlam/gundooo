@@ -116,8 +116,8 @@ function vesselIcon(vessel: ApiVessel) {
 
 function vesselIconSize(vessel: ApiVessel, selectedMmsi?: number) {
   const speed = vessel.last_position.speed_knots ?? 0;
-  if (vessel.mmsi === selectedMmsi) return speed < 0.8 ? 13 : 22;
-  return speed < 0.8 ? 6 : 15;
+  if (vessel.mmsi === selectedMmsi) return speed < 0.8 ? 18 : 34;
+  return speed < 0.8 ? 9 : 23;
 }
 
 const VESSEL_ICON_ATLAS = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
@@ -206,9 +206,9 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi 
       id: 'selected-vessel-halo',
       data: backendVessels.filter((v) => v.mmsi === backend?.selectedMmsi),
       getPosition: vesselPosition,
-      getRadius: 1650,
-      radiusMinPixels: 11,
-      radiusMaxPixels: 20,
+      getRadius: 2100,
+      radiusMinPixels: 15,
+      radiusMaxPixels: 28,
       getFillColor: [15, 23, 42, 70],
       getLineColor: [245, 158, 11, 240],
       lineWidthMinPixels: 2,
@@ -223,8 +223,8 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi 
       getPosition: vesselPosition,
       getAngle: vesselAngle,
       getSize: (d: ApiVessel) => vesselIconSize(d, backend?.selectedMmsi),
-      sizeMinPixels: 4,
-      sizeMaxPixels: 24,
+      sizeMinPixels: 6,
+      sizeMaxPixels: 36,
       getColor: (d: ApiVessel) => vesselColor(d, backend?.selectedMmsi),
       pickable: true,
       onClick: ({ object }: any) => object?.mmsi && onSelectMmsi?.(object.mmsi),
