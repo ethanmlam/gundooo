@@ -1,29 +1,22 @@
 # Gundo
 
-Maritime dark vessel triage and sensor allocation system. Built in 24 hours at the Army xTech NatSec Hackathon (May 2–3, 2026).
+Maritime dark vessel triage and sensor allocation system.
 
 140 vessels went dark off Long Beach. A collection manager has three sensors and 140 targets. Gundo ranks which vessel to care about, predicts where it went, and recommends which sensor to point at it.
 
 ## What it does
 
-**Triage** — Scores every dark event by duration, speed deviation, flag state, lane departure, and behavior. Ranks 140 dark vessels into a prioritized watchlist.
+**Triage**: Scores every dark event by duration, speed deviation, flag state, lane departure, and behavior. Ranks 140 dark vessels into a prioritized watchlist.
 
-**Intent classification** — Classifies why a vessel went dark: evasion, loitering, rendezvous, anchoring, or normal transit. Uses kinematic features (speed variance, heading variance, lane deviation, proximity to other vessels) not just gap duration.
+**Intent classification**: Classifies why a vessel went dark: evasion, loitering, rendezvous, anchoring, or normal transit. Uses kinematic features (speed variance, heading variance, lane deviation, proximity to other vessels) not just gap duration.
 
-**Position prediction** — Particle filter propagates 1,000 possible positions from last known state (heading, speed, location). Particles are weighted by navigable water boundaries, shipping lane proximity, and ocean constraints. Conformal prediction draws a 90% confidence polygon around the most likely search area.
+**Position prediction**: Particle filter propagates 1,000 possible positions from last known state (heading, speed, location). Particles are weighted by navigable water boundaries, shipping lane proximity, and ocean constraints. Conformal prediction draws a 90% confidence polygon around the most likely search area.
 
-**Sensor recommendation** — Entropy-based optimization across a catalog of sensor types (SAR spotlight, SAR stripmap, ELINT, OPIR). Ranks sensors by expected information gain — which sensor pass will reduce positional uncertainty the most. Accounts for weather degradation.
+**Sensor recommendation**: Entropy-based optimization across a catalog of sensor types (SAR spotlight, SAR stripmap, ELINT, OPIR). Ranks sensors by expected information gain — which sensor pass will reduce positional uncertainty the most. Accounts for weather degradation.
 
-**Bayesian updating** — After a sensor pass, the particle cloud is reweighted using the observation likelihood. Resampling collapses the search area. In the demo, a single SAR pass reduces the 90% confidence polygon by ~90%.
+**Bayesian updating**: After a sensor pass, the particle cloud is reweighted using the observation likelihood. Resampling collapses the search area. In the demo, a single SAR pass reduces the 90% confidence polygon by ~90%.
 
-**Multi-vessel allocation** — Given a sensor budget (N passes across M sensor types) and K prioritized targets, computes the optimal assignment of sensors to vessels. Greedy allocation by expected entropy reduction, constrained by available passes.
-
-## Demo flow
-
-607 vessels tracked → 140 dark events detected → triage ranks them →
-GRACEFUL LEADER scores #1 (dark 25hr, foreign flag, evasion) →
-particle filter generates search area → SAR tasked →
-search area drops 90% → vessel located
+**Multi-vessel allocation**: Given a sensor budget (N passes across M sensor types) and K prioritized targets, computes the optimal assignment of sensors to vessels. Greedy allocation by expected entropy reduction, constrained by available passes.
 
 ## Architecture
 
@@ -66,10 +59,5 @@ npm run dev
 ## Data
 
 AIS data is not included in the repo (150MB+). Download from MarineCadastre (https://marinecadastre.gov/ais/) and run backend/build_long_beach_csv.py to generate the replay dataset.
-
-## Team
-
-- **Jacob Quam** — backend (inference engine, particle filter, triage, intent, sensor optimization, API)
-- **Ethan Lam** — frontend (deck.gl visualization, map interaction, UI)
 
 Built at the 3rd Annual NatSec Hackathon, Shack15, San Francisco.
