@@ -1,7 +1,7 @@
 {
   "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"/Users/jacob/gundooo/backend/venv/bin/python -c \\\"from satellite import router; print('router:', router); print('routes:', [r.path for r in router.routes])\\\"\",\"description\":\"Verify satelli...",
-  "error": "Exit code 1\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"/Users/jacob/gundooo/backend/satellite.py\", line 11, in <module>\n    from sgp4.api import Satrec, jday\nModuleNotFoundError: No module named 'sgp4'",
-  "timestamp": "2026-05-03T05:05:49.206Z",
-  "retry_count": 5
+  "tool_input_preview": "{\"command\":\"source venv/bin/activate && python3 test_endpoints.py 2>&1\",\"timeout\":600000,\"description\":\"Run endpoint tests with longer timeouts\"}",
+  "error": "Exit code 1\nServer is up, testing endpoints...\nTesting slow endpoints (120s timeout)...\n=== Endpoint Test Results ===\n  /vessels: PASS\n  /dark-events: PASS\n  /weather: PASS\n  /weather/sensor-impact: PASS\n  /aircraft: PASS\n  /aircraft category: PASS\n  /history/338430405: PASS\n  /aircraft/proximity/338430405: PASS\n  /triage: PASS\n  /triage/weights: PASS\n  /triage/fuse-all: FAIL: timed out\n  /triage/retrain: FAIL: timed out\n\n10/12 endpoints passed",
+  "timestamp": "2026-05-03T06:12:24.849Z",
+  "retry_count": 1
 }

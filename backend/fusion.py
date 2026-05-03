@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Dempster-Shafer Evidence Fusion Module
 
@@ -423,6 +425,50 @@ def _recommendation(threat_belief: float) -> str:
 # ---------------------------------------------------------------------------
 # Route
 # ---------------------------------------------------------------------------
+
+def fuse_vessel_sync(mmsi: int) -> dict | None:
+    """Synchronous fusion for a single vessel. Returns dict or None on failure."""
+    try:
+        vessel_name = "Unknown"
+        if _get_vessel_info is not None:
+            info = _get_vessel_info(mmsi)
+            if info is None:
+                return None
+            vessel_name = info.get("name") or "MMSI-{}".format(mmsi)
+
+        mass_functions = []
+        sources = []
+
+        for gather_fn in (_gather_ais_dark, _gather_adsb, _gather_sanctions, _gather_intent, _gather_triage):
+            try:
+                if gather_fn in (_gather_ais_dark, _gather_adsb, _gather_sanctions, _gather_intent, _gather_triage):
+                    mf, src = gather_fn(mmsi)
+                if mf is not None:
+                    mass_functions.append(mf)
+                if src is not None:
+                    sources.append(src)
+            except Exception:
+                continue
+
+        if not mass_functions:
+            fused = _uniform_prior()
+        else:
+            fused = _combine_all(mass_functions)
+
+        return {
+            "fused_threat_belief": round(fused["threat"], 6),
+            "fused_safe_belief": round(fused["safe"], 6),
+            "fused_uncertainty": round(fused["uncertain"], 6),
+            "recommendation": _recommendation(fused["threat"]),
+            "sources": [
+                {"source": s.type, "confidence": s.confidence, "status": s.status}
+                for s in sources
+            ],
+        }
+    except Exception as exc:
+        logger.warning("fuse_vessel_sync failed for MMSI %s: %s", mmsi, exc)
+        return None
+
 
 @router.get("/{mmsi}", response_model=FusionResponse)
 async def fuse_vessel_evidence(mmsi: int) -> FusionResponse:

@@ -11,13 +11,16 @@ from pydantic import BaseModel
 
 from engine import particle_propagate, bayesian_update, recommend_sensor, ParticleCloud, _conformal_region
 from intent import classify_intent
-from triage import triage_dark_events, get_model_weights
+from triage import triage_dark_events, get_model_weights, retrain_with_fusion
 from correlation import find_correlations
 import adsb
 import sanctions
 import weather
 import satellite
 import fusion
+import history
+import timeline
+import allocator
 
 app = FastAPI(title="ARGUS Maritime Intelligence")
 app.add_middleware(
@@ -118,6 +121,16 @@ def _load_real_data():
 VESSELS, DARK_EVENTS = _load_real_data()
 VESSEL_MAP = {v["mmsi"]: v for v in VESSELS}
 PARTICLE_CLOUDS: dict[int, ParticleCloud] = {}
+_FUSION_CACHE: dict[int, dict] = {}
+
+
+def _get_or_compute_fusion(mmsi: int) -> dict | None:
+    if mmsi in _FUSION_CACHE:
+        return _FUSION_CACHE[mmsi]
+    result = fusion.fuse_vessel_sync(mmsi)
+    if result is not None:
+        _FUSION_CACHE[mmsi] = result
+    return result
 
 
 # --- GET endpoints ---
@@ -235,7 +248,20 @@ def recommend(mmsi: int):
 @app.get("/triage")
 def get_triage():
     ranked = triage_dark_events(DARK_EVENTS, VESSELS, VESSEL_MAP)
-    return {"triage": ranked, "count": len(ranked)}
+    enriched = []
+    for entry in ranked:
+        item = dict(entry)
+        cached = _FUSION_CACHE.get(entry["mmsi"])
+        if cached:
+            item["fused_threat_belief"] = cached.get("fused_threat_belief")
+            item["fusion_recommendation"] = cached.get("recommendation")
+            item["source_breakdown"] = cached.get("sources")
+        else:
+            item["fused_threat_belief"] = None
+            item["fusion_recommendation"] = None
+            item["source_breakdown"] = None
+        enriched.append(item)
+    return {"triage": enriched, "count": len(enriched)}
 
 
 @app.get("/correlations")
@@ -338,6 +364,39 @@ def search_loop(mmsi: int):
     }
 
 
+@app.get("/triage/retrain")
+def retrain_triage():
+    """Retrain the triage model using Dempster-Shafer fusion-derived labels."""
+    def _sync_fusion(mmsi: int) -> dict | None:
+        return _get_or_compute_fusion(mmsi)
+    try:
+        result = retrain_with_fusion(DARK_EVENTS, VESSELS, VESSEL_MAP, _sync_fusion)
+        if result is None:
+            raise HTTPException(status_code=500, detail="Retraining failed — insufficient data")
+        return result
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Retraining failed: {exc}")
+
+
+@app.get("/triage/fuse-all")
+def fuse_all_triage():
+    """Compute fusion for all dark-event vessels, populating the cache."""
+    fused_count = 0
+    already_cached = 0
+    for event in DARK_EVENTS:
+        mmsi = event["mmsi"]
+        if mmsi in _FUSION_CACHE:
+            already_cached += 1
+            continue
+        result = fusion.fuse_vessel_sync(mmsi)
+        if result is not None:
+            _FUSION_CACHE[mmsi] = result
+            fused_count += 1
+    return {"fused_count": fused_count, "cached_count": already_cached + fused_count}
+
+
 @app.get("/triage/weights")
 def get_triage_weights():
     weights = get_model_weights()
@@ -353,6 +412,9 @@ app.include_router(sanctions.router)
 app.include_router(weather.router)
 app.include_router(satellite.router)
 app.include_router(fusion.router)
+app.include_router(history.router)
+app.include_router(timeline.router)
+app.include_router(allocator.router)
 
 # ADS-B: vessel position lookup
 def _vessel_position(mmsi):
@@ -422,6 +484,20 @@ def _fusion_triage():
 
 fusion._get_triage = _fusion_triage
 fusion._get_vessel_info = lambda mmsi: VESSEL_MAP.get(mmsi)
+
+# History: wire callbacks
+history._get_dark_events = lambda: DARK_EVENTS
+history._get_vessel_info = lambda mmsi: VESSEL_MAP.get(mmsi)
+
+# Timeline: wire all callbacks
+timeline._get_vessel_info = lambda mmsi: VESSEL_MAP.get(mmsi)
+timeline._get_dark_events = lambda: DARK_EVENTS
+timeline._get_correlations = lambda: find_correlations(DARK_EVENTS, threat_scores={})
+timeline._get_fusion = getattr(fusion, 'fuse_vessel_sync', None)
+
+# Allocator: wire callbacks
+allocator._get_triage = lambda: triage_dark_events(DARK_EVENTS, VESSELS, VESSEL_MAP)
+allocator._get_dark_event = lambda mmsi: next((d for d in DARK_EVENTS if d["mmsi"] == mmsi), None)
 
 
 if __name__ == "__main__":

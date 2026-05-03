@@ -274,6 +274,87 @@ def triage_dark_events(
     return results
 
 
+def retrain_with_fusion(
+    dark_events: list[dict],
+    all_vessels: list[dict],
+    vessel_map: dict[int, dict],
+    fusion_func,
+) -> dict | None:
+    """Retrain the logistic regression using fusion-derived labels instead of synthetic rules.
+
+    fusion_func: callable (mmsi: int) -> dict with at least "fused_threat_belief" key, or None.
+    Falls back to synthetic labels when fusion_func fails for a given vessel.
+    """
+    global _trained_model, _trained_scaler, _feature_names, _training_samples, _positive_samples
+
+    if len(dark_events) < 5:
+        return None
+
+    intent_cache: dict[int, dict] = {}
+    feature_rows: list[list[float]] = []
+    labels: list[int] = []
+
+    for event in dark_events:
+        mmsi = event["mmsi"]
+        result = _extract_features(event, all_vessels, dark_events, vessel_map, intent_cache)
+        if result is None:
+            continue
+        features, intent, _ = result
+
+        # Try fusion-derived label first
+        label = None
+        try:
+            if fusion_func is not None:
+                fusion_result = fusion_func(mmsi)
+                if fusion_result is not None and "fused_threat_belief" in fusion_result:
+                    label = int(fusion_result["fused_threat_belief"] > 0.5)
+        except Exception as exc:
+            log.warning("fusion label failed for MMSI %d: %s, using synthetic", mmsi, exc)
+
+        # Fall back to synthetic label
+        if label is None:
+            duration_hours = features[1]
+            last_known_speed = features[2]
+            suspicious = (
+                intent in ("evasion", "rendezvous")
+                or (duration_hours > 12.0 and last_known_speed > 8.0)
+            )
+            label = int(suspicious)
+
+        feature_rows.append(features)
+        labels.append(label)
+
+    if len(feature_rows) < 5:
+        return None
+
+    X = np.array(feature_rows)
+    y = np.array(labels)
+
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+
+    model = LogisticRegression(class_weight="balanced", max_iter=1000)
+    model.fit(X_scaled, y)
+
+    feature_names = [
+        "intent_score",
+        "duration_hours",
+        "last_known_speed",
+        "vessel_type_code",
+        "flag_foreign",
+    ]
+
+    _trained_model = model
+    _trained_scaler = scaler
+    _feature_names = feature_names
+    _training_samples = len(labels)
+    _positive_samples = sum(labels)
+
+    log.info("retrain_with_fusion: %d samples, %d positive", _training_samples, _positive_samples)
+
+    return get_model_weights()
+
+
 def get_model_weights() -> dict | None:
     """Return logistic regression coefficients and metadata, or None if not yet trained."""
     if _trained_model is None or _feature_names is None:

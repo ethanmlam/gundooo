@@ -61,6 +61,7 @@ class SensorTasking(TypedDict):
     center_lon: float
     revisit_hrs: int | None
     res_m: int | None
+    weather_note: str | None
 
 
 class Recommendation(TypedDict):
@@ -233,6 +234,15 @@ def _conformal_region(lats: NDArray, lons: NDArray, weights: NDArray, level: flo
     }
 
 
+def _get_sensor_degradation() -> dict[str, dict]:
+    """Fetch per-sensor weather degradation. Returns {} on failure (zero degradation)."""
+    try:
+        from weather import compute_sensor_degradation
+        return compute_sensor_degradation()
+    except Exception:
+        return {}
+
+
 def recommend_sensor(
     cloud: ParticleCloud,
     candidate_sensors: list[dict] | None = None,
@@ -249,6 +259,8 @@ def recommend_sensor(
             for entry in SENSOR_CATALOG
         ]
 
+    weather_degradation = _get_sensor_degradation()
+
     current_entropy = _entropy(weights)
     taskings: list[SensorTasking] = []
 
@@ -257,14 +269,24 @@ def recommend_sensor(
         dist = np.sqrt((lats - s_lat) ** 2 + (lons - s_lon) ** 2)
         in_view = dist < radius
 
+        sensor_id = sensor["sensor_id"]
+        deg_info = weather_degradation.get(sensor_id, {})
+        deg_factor = float(deg_info.get("degradation", 0.0))
+        deg_note = deg_info.get("note")
+        weather_note = None
+        if deg_factor > 0.1 and deg_note:
+            pct = int(round(deg_factor * 100))
+            weather_note = f"{sensor_id} degraded {pct}% — {deg_note}"
+
         if in_view.sum() == 0:
             taskings.append(SensorTasking(
-                sensor_id=sensor["sensor_id"],
+                sensor_id=sensor_id,
                 expected_entropy_reduction=0.0,
                 center_lat=s_lat,
                 center_lon=s_lon,
                 revisit_hrs=sensor.get("revisit_hrs"),
                 res_m=sensor.get("res_m"),
+                weather_note=weather_note,
             ))
             continue
 
@@ -283,13 +305,16 @@ def recommend_sensor(
         expected_posterior_entropy = p_detect * entropy_if_seen + (1 - p_detect) * entropy_if_not_seen
         reduction = current_entropy - expected_posterior_entropy
 
+        effective_reduction = reduction * (1.0 - deg_factor)
+
         taskings.append(SensorTasking(
-            sensor_id=sensor["sensor_id"],
-            expected_entropy_reduction=float(reduction),
+            sensor_id=sensor_id,
+            expected_entropy_reduction=float(effective_reduction),
             center_lat=s_lat,
             center_lon=s_lon,
             revisit_hrs=sensor.get("revisit_hrs"),
             res_m=sensor.get("res_m"),
+            weather_note=weather_note,
         ))
 
     taskings.sort(key=lambda t: t["expected_entropy_reduction"], reverse=True)

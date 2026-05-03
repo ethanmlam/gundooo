@@ -141,98 +141,122 @@
   "hotPaths": [
     {
       "path": "backend/main.py",
-      "accessCount": 35,
-      "lastAccessed": 1777784876391,
+      "accessCount": 58,
+      "lastAccessed": 1777789204276,
       "type": "file"
     },
     {
       "path": "src/routes/Mission.tsx",
-      "accessCount": 34,
-      "lastAccessed": 1777779289721,
+      "accessCount": 35,
+      "lastAccessed": 1777786648255,
       "type": "file"
     },
     {
       "path": "src/components/mission/TacticalMap.tsx",
-      "accessCount": 29,
-      "lastAccessed": 1777779283881,
-      "type": "file"
-    },
-    {
-      "path": "backend/triage.py",
-      "accessCount": 18,
-      "lastAccessed": 1777770128714,
+      "accessCount": 30,
+      "lastAccessed": 1777786648742,
       "type": "file"
     },
     {
       "path": "backend/engine.py",
-      "accessCount": 18,
-      "lastAccessed": 1777773676712,
+      "accessCount": 27,
+      "lastAccessed": 1777789058048,
       "type": "file"
     },
     {
-      "path": "src/lib/backendApi.ts",
-      "accessCount": 17,
-      "lastAccessed": 1777775173014,
+      "path": "backend/triage.py",
+      "accessCount": 22,
+      "lastAccessed": 1777787415082,
       "type": "file"
     },
     {
       "path": "backend/fusion.py",
-      "accessCount": 14,
-      "lastAccessed": 1777784851279,
+      "accessCount": 22,
+      "lastAccessed": 1777787911530,
       "type": "file"
     },
     {
-      "path": "src/styles.css",
-      "accessCount": 7,
-      "lastAccessed": 1777778763199,
-      "type": "file"
-    },
-    {
-      "path": "src/routes/Landing.tsx",
-      "accessCount": 7,
-      "lastAccessed": 1777778774950,
-      "type": "file"
-    },
-    {
-      "path": "src/data/scenario.ts",
-      "accessCount": 5,
-      "lastAccessed": 1777772935923,
-      "type": "file"
-    },
-    {
-      "path": "backend/correlation.py",
-      "accessCount": 4,
-      "lastAccessed": 1777769469190,
-      "type": "file"
-    },
-    {
-      "path": "backend/intent.py",
-      "accessCount": 4,
-      "lastAccessed": 1777770355362,
+      "path": "src/lib/backendApi.ts",
+      "accessCount": 18,
+      "lastAccessed": 1777786665803,
       "type": "file"
     },
     {
       "path": "backend/adsb.py",
-      "accessCount": 4,
-      "lastAccessed": 1777784835012,
+      "accessCount": 11,
+      "lastAccessed": 1777787719286,
+      "type": "file"
+    },
+    {
+      "path": "src/styles.css",
+      "accessCount": 8,
+      "lastAccessed": 1777786640705,
+      "type": "file"
+    },
+    {
+      "path": "src/routes/Landing.tsx",
+      "accessCount": 8,
+      "lastAccessed": 1777786646779,
+      "type": "file"
+    },
+    {
+      "path": "src/data/scenario.ts",
+      "accessCount": 6,
+      "lastAccessed": 1777786669213,
+      "type": "file"
+    },
+    {
+      "path": "backend/correlation.py",
+      "accessCount": 6,
+      "lastAccessed": 1777787364202,
+      "type": "file"
+    },
+    {
+      "path": "backend/weather.py",
+      "accessCount": 6,
+      "lastAccessed": 1777787476409,
+      "type": "file"
+    },
+    {
+      "path": "backend/test_endpoints.py",
+      "accessCount": 6,
+      "lastAccessed": 1777788439724,
+      "type": "file"
+    },
+    {
+      "path": "backend/intent.py",
+      "accessCount": 5,
+      "lastAccessed": 1777786656610,
       "type": "file"
     },
     {
       "path": "backend/satellite.py",
-      "accessCount": 4,
-      "lastAccessed": 1777784836677,
+      "accessCount": 5,
+      "lastAccessed": 1777786674885,
       "type": "file"
     },
     {
-      "path": "src/data/theaters.ts",
-      "accessCount": 3,
-      "lastAccessed": 1777772937395,
+      "path": "backend/sanctions.py",
+      "accessCount": 5,
+      "lastAccessed": 1777787359917,
       "type": "file"
     },
     {
       "path": "src/routes/TheaterSelect.tsx",
+      "accessCount": 4,
+      "lastAccessed": 1777786647597,
+      "type": "file"
+    },
+    {
+      "path": "src/data/theaters.ts",
+      "accessCount": 4,
+      "lastAccessed": 1777786669387,
+      "type": "file"
+    },
+    {
+      "path": "backend/timeline.py",
       "accessCount": 3,
-      "lastAccessed": 1777778780986,
+      "lastAccessed": 1777787733284,
       "type": "file"
     },
     {
@@ -242,15 +266,111 @@
       "type": "file"
     },
     {
-      "path": "backend/sanctions.py",
+      "path": "package.json",
       "accessCount": 2,
-      "lastAccessed": 1777784835678,
+      "lastAccessed": 1777786638336,
       "type": "file"
     },
     {
-      "path": "backend/weather.py",
+      "path": "DESIGN.md",
       "accessCount": 2,
-      "lastAccessed": 1777784836427,
+      "lastAccessed": 1777786639336,
+      "type": "file"
+    },
+    {
+      "path": "src/main.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1777786639913,
+      "type": "file"
+    },
+    {
+      "path": "src/app/router.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1777786640435,
+      "type": "file"
+    },
+    {
+      "path": "vite.config.ts",
+      "accessCount": 2,
+      "lastAccessed": 1777786641294,
+      "type": "file"
+    },
+    {
+      "path": "src/components/mission/QueryConsole.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1777786649489,
+      "type": "file"
+    },
+    {
+      "path": "src/components/mission/AlertPanel.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1777786649699,
+      "type": "file"
+    },
+    {
+      "path": "src/components/mission/FeedStatus.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1777786650008,
+      "type": "file"
+    },
+    {
+      "path": "src/components/mission/TimelineScrubber.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1777786650274,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/store.ts",
+      "accessCount": 2,
+      "lastAccessed": 1777786666920,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/useLiveAis.ts",
+      "accessCount": 2,
+      "lastAccessed": 1777786667574,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/queryParser.ts",
+      "accessCount": 2,
+      "lastAccessed": 1777786668393,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/mockFeeds.ts",
+      "accessCount": 2,
+      "lastAccessed": 1777786668846,
+      "type": "file"
+    },
+    {
+      "path": "src/components/globe/TheaterGlobe.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1777786676060,
+      "type": "file"
+    },
+    {
+      "path": "src/components/workbench/MarineWorkbench.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1777786676700,
+      "type": "file"
+    },
+    {
+      "path": "src/components/charts/FeedVolumeChart.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1777786677140,
+      "type": "file"
+    },
+    {
+      "path": "src/components/charts/ConfidenceChart.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1777786677706,
+      "type": "file"
+    },
+    {
+      "path": "src/data/cities.ts",
+      "accessCount": 2,
+      "lastAccessed": 1777786678088,
       "type": "file"
     },
     {
@@ -266,111 +386,39 @@
       "type": "file"
     },
     {
-      "path": "package.json",
+      "path": "README.md",
       "accessCount": 1,
-      "lastAccessed": 1777768197548,
+      "lastAccessed": 1777786639516,
       "type": "file"
     },
     {
-      "path": "vite.config.ts",
+      "path": "src/data/sensorSandbox.ts",
       "accessCount": 1,
-      "lastAccessed": 1777768197604,
+      "lastAccessed": 1777786669584,
       "type": "file"
     },
     {
-      "path": "src/main.tsx",
+      "path": "backend/history.py",
       "accessCount": 1,
-      "lastAccessed": 1777768198025,
+      "lastAccessed": 1777787392027,
       "type": "file"
     },
     {
-      "path": "src/app/router.tsx",
+      "path": "backend/test_timeline.py",
       "accessCount": 1,
-      "lastAccessed": 1777768198267,
+      "lastAccessed": 1777788908482,
       "type": "file"
     },
     {
-      "path": "src/components/globe/TheaterGlobe.tsx",
+      "path": "backend/allocator.py",
       "accessCount": 1,
-      "lastAccessed": 1777768204425,
+      "lastAccessed": 1777789188871,
       "type": "file"
     },
     {
-      "path": "src/components/mission/AlertPanel.tsx",
+      "path": "backend/test_allocator.py",
       "accessCount": 1,
-      "lastAccessed": 1777768205449,
-      "type": "file"
-    },
-    {
-      "path": "src/components/mission/QueryConsole.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1777768206001,
-      "type": "file"
-    },
-    {
-      "path": "src/components/mission/FeedStatus.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1777768206242,
-      "type": "file"
-    },
-    {
-      "path": "src/components/mission/TimelineScrubber.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1777768206869,
-      "type": "file"
-    },
-    {
-      "path": "src/lib/store.ts",
-      "accessCount": 1,
-      "lastAccessed": 1777768213449,
-      "type": "file"
-    },
-    {
-      "path": "src/lib/mockFeeds.ts",
-      "accessCount": 1,
-      "lastAccessed": 1777768215898,
-      "type": "file"
-    },
-    {
-      "path": "src/lib/useLiveAis.ts",
-      "accessCount": 1,
-      "lastAccessed": 1777768216018,
-      "type": "file"
-    },
-    {
-      "path": "src/lib/queryParser.ts",
-      "accessCount": 1,
-      "lastAccessed": 1777768216257,
-      "type": "file"
-    },
-    {
-      "path": "src/data/cities.ts",
-      "accessCount": 1,
-      "lastAccessed": 1777768216506,
-      "type": "file"
-    },
-    {
-      "path": "src/components/workbench/MarineWorkbench.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1777768221704,
-      "type": "file"
-    },
-    {
-      "path": "src/components/charts/ConfidenceChart.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1777768222585,
-      "type": "file"
-    },
-    {
-      "path": "src/components/charts/FeedVolumeChart.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1777768223016,
-      "type": "file"
-    },
-    {
-      "path": "DESIGN.md",
-      "accessCount": 1,
-      "lastAccessed": 1777777977871,
+      "lastAccessed": 1777789307171,
       "type": "file"
     }
   ],

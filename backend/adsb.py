@@ -197,13 +197,45 @@ def _haversine_nm(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 
 
 # ---------------------------------------------------------------------------
+# Classification
+# ---------------------------------------------------------------------------
+
+_MILITARY_LEO_PREFIXES = ("CGNR", "CBP", "USCG", "COAST", "RCH", "EVAC", "PAT", "RESCUE")
+_GOVERNMENT_PREFIXES = ("NASA",)
+_COMMERCIAL_PREFIXES = ("AAL", "UAL", "DAL", "SWA", "ASA", "JBU", "SKW", "FFT", "ENY")
+
+
+def classify_aircraft(callsign: str, origin_country: str) -> str:
+    """Return a category string for the given callsign / origin_country pair."""
+    cs = (callsign or "").strip().upper()
+    if not cs:
+        return "general_aviation"
+    for prefix in _MILITARY_LEO_PREFIXES:
+        if cs.startswith(prefix):
+            return "military_leo"
+    for prefix in _GOVERNMENT_PREFIXES:
+        if cs.startswith(prefix):
+            return "government"
+    if cs == "N/A" and (origin_country or "") != "United States":
+        return "government"
+    for prefix in _COMMERCIAL_PREFIXES:
+        if cs.startswith(prefix):
+            return "commercial"
+    return "general_aviation"
+
+
+# ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
 
 @router.get("/aircraft")
 def get_aircraft():
     aircraft = _get_aircraft()
-    return {"aircraft": aircraft, "count": len(aircraft)}
+    result = [
+        {**ac, "category": classify_aircraft(ac.get("callsign", ""), ac.get("origin_country", ""))}
+        for ac in aircraft
+    ]
+    return {"aircraft": result, "count": len(result)}
 
 
 @router.get("/aircraft/proximity/{mmsi}")
@@ -226,13 +258,21 @@ def get_aircraft_proximity(mmsi: int):
             continue
         dist = _haversine_nm(vessel_lat, vessel_lon, ac["lat"], ac["lon"])
         if dist <= 30.0:
-            nearby.append({**ac, "distance_nm": round(dist, 2)})
+            category = classify_aircraft(ac.get("callsign", ""), ac.get("origin_country", ""))
+            nearby.append({**ac, "distance_nm": round(dist, 2), "category": category})
 
-    nearby.sort(key=lambda x: x["distance_nm"])
+    # Sort: military_leo first, then by distance_nm ascending within each group
+    nearby.sort(key=lambda x: (0 if x["category"] == "military_leo" else 1, x["distance_nm"]))
+
+    patrol_aircraft = [ac for ac in nearby if ac["category"] == "military_leo"]
+    patrol_nearby = len(patrol_aircraft) > 0
+    nearest_patrol = patrol_aircraft[0] if patrol_nearby else None
 
     return {
         "mmsi": mmsi,
         "vessel_position": {"lat": vessel_lat, "lon": vessel_lon},
         "aircraft": nearby,
         "count": len(nearby),
+        "patrol_nearby": patrol_nearby,
+        "nearest_patrol": nearest_patrol,
     }

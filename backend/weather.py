@@ -207,9 +207,12 @@ def get_weather():
     return {"stations": data, "count": len(data)}
 
 
-@router.get("/weather/sensor-impact")
-def get_sensor_impact():
-    """Compute per-sensor degradation from current sea/weather conditions."""
+def compute_sensor_degradation() -> dict[str, dict]:
+    """Compute per-sensor degradation from current sea/weather conditions.
+
+    Returns a dict keyed by sensor_id, each value having 'degradation' (0-1)
+    and 'note' (str). Importable by engine.py for weather-aware recommendations.
+    """
     obs = _representative_obs()
 
     visibility_nm: Optional[float] = obs.get("visibility_nm")
@@ -234,7 +237,7 @@ def get_sensor_impact():
         opir_note = f"Good visibility ({visibility_nm:.1f} nm) — minimal OPIR degradation"
 
     # --- EO-SPOTLIGHT: visibility + wave height (platform stability) ---
-    eo_vis_deg = opir_deg  # same visibility component
+    eo_vis_deg = opir_deg
 
     if wave_height_m is None:
         eo_wave_factor = 0.1
@@ -256,7 +259,6 @@ def get_sensor_impact():
     )
 
     # --- ELINT-PASS: slight degradation from pressure/wave conditions ---
-    # Low pressure + high waves suggest precipitation/humidity
     low_pressure = pressure_hpa is not None and pressure_hpa < 1005.0
     rough_sea = wave_height_m is not None and wave_height_m > 2.5
     if low_pressure and rough_sea:
@@ -270,39 +272,51 @@ def get_sensor_impact():
         elint_note = "Stable conditions — minimal ELINT degradation"
 
     # --- RF-ELINT: similar to ELINT-PASS, precipitation/humidity driven ---
-    rf_deg = elint_deg * 0.8  # RF slightly less susceptible than ELINT
+    rf_deg = elint_deg * 0.8
     rf_note = (
         "Precipitation/humidity estimated from sea state and pressure — "
         f"slight RF propagation loss ({rf_deg:.2f})"
     )
 
     return {
+        "SAR-SPOTLIGHT": {
+            "degradation": 0.0,
+            "note": "SAR operates independently of weather and visibility — no degradation",
+        },
+        "SAR-STRIPMAP": {
+            "degradation": 0.0,
+            "note": "SAR operates independently of weather and visibility — no degradation",
+        },
+        "ELINT-PASS": {
+            "degradation": round(elint_deg, 3),
+            "note": elint_note,
+        },
+        "OPIR-WIDE": {
+            "degradation": round(opir_deg, 3),
+            "note": opir_note,
+        },
+        "EO-SPOTLIGHT": {
+            "degradation": round(eo_deg, 3),
+            "note": eo_note,
+        },
+        "RF-ELINT": {
+            "degradation": round(rf_deg, 3),
+            "note": rf_note,
+        },
+    }
+
+
+@router.get("/weather/sensor-impact")
+def get_sensor_impact():
+    """Compute per-sensor degradation from current sea/weather conditions."""
+    degradation = compute_sensor_degradation()
+    obs = _representative_obs()
+    return {
         "conditions_summary": {
-            "visibility_nm": visibility_nm,
-            "wave_height_m": wave_height_m,
-            "pressure_hpa": pressure_hpa,
+            "visibility_nm": obs.get("visibility_nm"),
+            "wave_height_m": obs.get("wave_height_m"),
+            "pressure_hpa": obs.get("pressure_hpa"),
             "sea_state": obs.get("sea_state"),
         },
-        "sensor_degradation": {
-            "SAR-SPOTLIGHT": {
-                "degradation": 0.0,
-                "note": "SAR operates independently of weather and visibility — no degradation",
-            },
-            "ELINT-PASS": {
-                "degradation": round(elint_deg, 3),
-                "note": elint_note,
-            },
-            "OPIR-WIDE": {
-                "degradation": round(opir_deg, 3),
-                "note": opir_note,
-            },
-            "EO-SPOTLIGHT": {
-                "degradation": round(eo_deg, 3),
-                "note": eo_note,
-            },
-            "RF-ELINT": {
-                "degradation": round(rf_deg, 3),
-                "note": rf_note,
-            },
-        },
+        "sensor_degradation": degradation,
     }
