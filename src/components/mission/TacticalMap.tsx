@@ -57,11 +57,11 @@ type Props = {
   showSensorResult?: boolean;
 };
 
-function vesselPosition(vessel: ApiVessel) {
+function vesselPosition(vessel: ApiVessel): [number, number] {
   return [vessel.last_position.lon, vessel.last_position.lat];
 }
 
-function vesselTrack(vessel: ApiVessel) {
+function vesselTrack(vessel: ApiVessel): [number, number][] {
   return (vessel.track_points ?? []).map((point) => [point.lon, point.lat]);
 }
 
@@ -77,7 +77,7 @@ function particleData(prediction: ParticleCloud | null) {
     .filter((p) => !((p.position[1] > 33.78 && p.position[0] > -118.3) || (p.position[1] > 33.85 && p.position[0] > -118.5) || p.position[1] > 34.0));
 }
 
-function darkEventPosition(event: DarkEvent) {
+function darkEventPosition(event: DarkEvent): [number, number] {
   return [event.last_known_lon, event.last_known_lat];
 }
 
