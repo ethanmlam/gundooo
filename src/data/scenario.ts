@@ -44,7 +44,7 @@ export const straitOfHormuzScenario: MissionScenario = {
     { severity: 'HIGH', title: 'VLCC speed drop inside Hormuz chokepoint', source: 'AIS + RadarSim', time: '16:12Z' },
     { severity: 'HIGH', title: 'LNG carrier holding near lane merge', source: 'AIS', time: '16:16Z' },
     { severity: 'MED', title: 'AIS density spike near outbound lane', source: 'AIS', time: '16:18Z' },
-    { severity: 'LOW', title: 'Fujairah approaches nominal', source: 'OSINT', time: '16:31Z' },
+    { severity: 'LOW', title: 'Visibility remains usable for follow-on patrol', source: 'Weather', time: '16:31Z' },
   ],
   feedVolume: [
     { t: '16:00', AIS: 68, ADSB: 5, Radar: 1 },
@@ -57,7 +57,7 @@ export const straitOfHormuzScenario: MissionScenario = {
   confidence: [
     { name: 'AIS', value: 62 },
     { name: 'RadarSim', value: 76 },
-    { name: 'OSINT', value: 36 },
+    { name: 'Weather', value: 58 },
   ],
 };
 

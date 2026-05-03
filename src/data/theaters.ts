@@ -15,8 +15,8 @@ export const theaters: Theater[] = [
     lat: 26.6,
     lng: 56.3,
     risk: 'High',
-    feeds: ['AIS', 'RadarSim', 'OSINT'],
-    summary: 'Oil chokepoint watch: tanker flow, slowdowns, holding behavior, and vessel profiles.',
+    feeds: ['AIS exercise', 'Weather', 'SensorSim'],
+    summary: 'Oil chokepoint exercise: missing tanker custody, weather-aware sensor tasking, and search-area reduction.',
   },
   {
     id: 'long-beach',

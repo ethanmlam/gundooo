@@ -186,7 +186,7 @@ h1, h2, h3 { margin: 0; letter-spacing: -.02em; }
 .status-pill { border-radius: 2px; padding: 3px 6px; font-size: 9px; letter-spacing: .08em; text-transform: uppercase; font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
 .status-pill.high { color: #E5484D; background: rgba(229,72,77,.08); border: 1px solid rgba(229,72,77,.15); }
 .status-pill.medium { color: #D4915C; background: rgba(212,145,92,.08); border: 1px solid rgba(212,145,92,.15); }
-.sidebar-metrics { margin-top: 8px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.sidebar-metrics { margin-top: 8px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
 .sidebar-metrics div { border: 1px solid rgba(255,255,255,.06); background: rgba(255,255,255,.02); border-radius: 2px; padding: 6px; }
 .sidebar-metrics b { display: block; font-size: 14px; letter-spacing: -.02em; font-family: 'IBM Plex Mono', monospace; color: #e5e7eb; }
 .sidebar-metrics span { display: block; margin-top: 1px; color: #6b7280; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
@@ -205,6 +205,18 @@ h1, h2, h3 { margin: 0; letter-spacing: -.02em; }
 .primary-action { width: 100%; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid rgba(255,255,255,.1); border-radius: 2px; padding: 8px; background: rgba(255,255,255,.04); color: #d1d5db; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
 .primary-action:hover { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.18); }
 .production-sidebar + .c2-map .map-title { background: rgba(8,11,17,.9); border-radius: 2px; }
+.sensor-recommendation { margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.sensor-recommendation div, .weather-grid div { border: 1px solid rgba(255,255,255,.06); background: rgba(255,255,255,.02); border-radius: 2px; padding: 6px; min-width: 0; }
+.sensor-recommendation span { display: block; color: #6b7280; font-size: 9px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+.sensor-recommendation b { display: block; color: #e5e7eb; font-size: 11px; font-family: 'IBM Plex Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sensor-recommendation p { font-size: 9px; margin-top: 2px; }
+.sensor-tasking-card .secondary-action { margin-top: 6px; }
+.sandbox-note { margin-top: 6px; font-size: 10px; color: #9ca3af; }
+.weather-grid { margin: 8px 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.weather-grid b { display: block; color: #e5e7eb; font-size: 14px; font-family: 'IBM Plex Mono', monospace; }
+.weather-grid span { display: block; color: #6b7280; font-size: 9px; text-transform: uppercase; letter-spacing: .04em; font-weight: 700; }
+.commander-panel .commander-brief { margin-top: 10px; border-top: 1px solid rgba(255,255,255,.06); padding-top: 8px; }
+.commander-panel .commander-brief p { color: #d1d5db; font-size: 12px; line-height: 1.45; }
 
 /* ── Anomaly / Backend integration ── */
 .anomaly-card { max-height: 220px; overflow: hidden; }
@@ -232,13 +244,15 @@ h1, h2, h3 { margin: 0; letter-spacing: -.02em; }
 .profile-score em { grid-area: status; color: #9ca3af; font-size: 10px; font-style: normal; font-weight: 600; font-family: 'IBM Plex Mono', monospace; }
 
 /* ── Lean Hormuz layout ── */
-.lean-layout { grid-template-columns: 240px minmax(560px, 1fr) 300px; grid-template-rows: 52px minmax(0, 1fr); }
+.lean-layout { --left-sidebar-width: 240px; --right-sidebar-width: 300px; grid-template-columns: var(--left-sidebar-width) minmax(560px, 1fr) var(--right-sidebar-width); grid-template-rows: 52px minmax(0, 1fr); transition: grid-template-columns .16s ease; }
+.lean-layout.left-sidebar-collapsed { --left-sidebar-width: 52px; }
+.lean-layout.right-sidebar-collapsed { --right-sidebar-width: 52px; }
 .lean-layout .mission-topbar { grid-column: 1 / 4; }
 .lean-layout .c2-left { grid-column: 1; grid-row: 2; }
 .lean-layout .c2-map { grid-column: 2; grid-row: 2; }
 .lean-layout .c2-right { grid-column: 3; grid-row: 2; }
 .lean-layout .c2-workbench, .lean-layout .c2-charts, .lean-layout .c2-alert-strip, .lean-layout .timeline { display: none; }
-.lean-sidebar { gap: 6px; align-content: start; overflow: hidden; }
+.lean-sidebar { gap: 6px; align-content: start; overflow: auto; }
 .lean-sidebar .stripe-card { box-shadow: none; }
 .lean-sidebar .compact-card p { font-size: 10px; }
 .essential-card { min-height: 0; overflow: hidden; }
@@ -249,9 +263,21 @@ h1, h2, h3 { margin: 0; letter-spacing: -.02em; }
 .lean-layout .ship-roster { max-height: calc(100vh - 430px); }
 .lean-layout .identity-card { grid-template-columns: 1fr; }
 .lean-layout .profile-score { margin: 8px 0; }
-.lean-layout .sidebar-metrics { grid-template-columns: repeat(3, 1fr); }
+.lean-layout .sidebar-metrics { grid-template-columns: repeat(2, 1fr); }
 .lean-layout .mission-topbar h1 { font-size: 14px; }
 .lean-layout .mission-topbar p { max-width: 680px; font-size: 10px; }
+
+.sidebar-toggle { width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.08); border-radius: 2px; padding: 0; background: rgba(255,255,255,.025); color: #9ca3af; }
+.sidebar-toggle:hover { color: #e5e7eb; background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.16); }
+.sidebar-toggle.left { justify-self: end; }
+.sidebar-toggle.right { justify-self: start; }
+.lean-layout .sidebar-collapsed { padding: 6px; overflow: hidden; justify-items: center; align-content: start; gap: 8px; }
+.lean-layout .sidebar-collapsed .sidebar-toggle { justify-self: center; }
+.sidebar-icon-rail { width: 100%; display: grid; gap: 6px; justify-items: center; }
+.rail-icon { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.08); border-radius: 2px; background: rgba(255,255,255,.025); color: #9ca3af; }
+button.rail-icon { padding: 0; }
+.rail-action:not(:disabled):hover, .rail-icon[role="img"]:hover { color: #e5e7eb; background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.16); }
+.rail-action:disabled { opacity: .5; cursor: progress; }
 
 /* ── Tactical map ── */
 .tactical-map-shell { position: absolute; inset: 0; }

@@ -1,12 +1,13 @@
 # Gundooo
 
-A Vite + React live OSINT world model demo for theater-level maritime and air-domain anomaly detection.
+A Vite + React command-and-control demo for maritime custody after AIS disappears.
 
-## Flow
+## Demo Flow
 
-1. Landing page: `Gundooo: Live OSINT World Model`
-2. Globe theater selector: South China Sea, Taiwan Strait, Persian Gulf, Baltic Sea, Red Sea
-3. Mission watchfloor: tactical map, anomaly queue, natural language tasking, feed status, charts, and 3D operational workbench
+1. Landing page: `A tanker goes AIS-dark. What do you task next?`
+2. Theater selector: Strait of Hormuz sensor sandbox and Long Beach vessel watch
+3. Hormuz mission: cached AIS-style exercise tracks, weather context, simulated sensor coverages, uncertainty region, sensor hit, and commander brief
+4. Long Beach mission: local AIS replay backend for vessel profiles, dark-event triage, particle prediction, and sensor recommendation
 
 ## Stack
 
@@ -29,7 +30,7 @@ npm install
 npm run dev
 ```
 
-Open the printed URL, usually `http://localhost:5173`. Routes use hash URLs so the static build works from any subdirectory, for example `/#/mission/south-china-sea`.
+Open the printed URL, usually `http://localhost:5173`. Routes use hash URLs so the static build works from any subdirectory, for example `/#/mission/strait-of-hormuz`.
 
 ## Build
 
@@ -38,14 +39,27 @@ npm run build
 npm run preview
 ```
 
-## Data note
+## Backend
 
-This is a front-end-first demo with deterministic mock feeds. It is structured so real connectors can replace the mock data later:
+The frontend works without the backend for the Hormuz exercise sandbox.
 
-- AIS for vessels
-- ADS-B for aircraft
-- synthetic radar detections
-- weather / cloud cover
-- OSINT incident feeds
+For the Long Beach replay backend:
 
-The South China Sea mission is the wired demo scenario.
+```bash
+cd backend
+.venv/bin/python main.py
+```
+
+Then open `/#/mission/long-beach`.
+
+## Data Provenance
+
+The Hormuz demo is an exercise environment:
+
+- AIS snapshot: cached AIS-style vessel tracks and last-known positions
+- Weather: cached open-weather context for wind, visibility, cloud, and sea state
+- Sensor actions: simulated SAR, coastal radar, UAV EO, ELINT, and patrol tasking
+- Observation: simulated detection used to demonstrate Bayesian update / search-area reduction
+- Prediction: model output and deterministic demo geometry
+
+The Long Beach backend uses the local `backend/data/AIS_real.csv` replay dataset for vessel summaries and detected AIS gaps. Treat it as replay data, not a live feed.

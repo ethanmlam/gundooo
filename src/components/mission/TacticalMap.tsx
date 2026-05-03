@@ -4,6 +4,7 @@ import { Map } from 'react-map-gl/maplibre';
 import { IconLayer, PathLayer, PolygonLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { missionScenario, type MissionScenario } from '../../data/scenario';
+import type { HormuzSensorSandbox, SandboxSensor } from '../../data/sensorSandbox';
 import { useLiveAis } from '../../lib/useLiveAis';
 import type { BackendState, ApiVessel, DarkEvent, ParticleCloud, SearchLoopData } from '../../lib/backendApi';
 
@@ -52,6 +53,8 @@ type Props = {
   onSelectMmsi?: (mmsi: number) => void;
   searchLoop?: SearchLoopData | null;
   showAfterPolygon?: boolean;
+  sensorSandbox?: HormuzSensorSandbox;
+  showSensorResult?: boolean;
 };
 
 function vesselPosition(vessel: ApiVessel) {
@@ -139,7 +142,22 @@ const VESSEL_ICON_MAPPING = {
   stopped: { x: 64, y: 0, width: 64, height: 64, anchorX: 32, anchorY: 32, mask: true },
 };
 
-export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi, searchLoop, showAfterPolygon }: Props) {
+function sensorLineColor(sensor: SandboxSensor, recommendedSensorId?: string): [number, number, number, number] {
+  if (sensor.id === recommendedSensorId) return [52, 211, 153, 225];
+  if (sensor.kind === 'sar') return [56, 189, 248, 175];
+  if (sensor.kind === 'radar') return [245, 158, 11, 170];
+  if (sensor.kind === 'uav') return [167, 139, 250, 165];
+  if (sensor.kind === 'elint') return [250, 204, 21, 160];
+  return [148, 163, 184, 150];
+}
+
+function sensorFillColor(sensor: SandboxSensor, recommendedSensorId?: string): [number, number, number, number] {
+  const alpha = sensor.id === recommendedSensorId ? 32 : 14;
+  const [r, g, b] = sensorLineColor(sensor, recommendedSensorId);
+  return [r, g, b, alpha];
+}
+
+export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi, searchLoop, showAfterPolygon, sensorSandbox, showSensorResult }: Props) {
   const [basemap, setBasemap] = useState<BasemapKey>('dark');
   const initialZoom = scenario.defaultZoom ?? 7.2;
   const [zoom, setZoom] = useState(initialZoom);
@@ -153,6 +171,9 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
   const particles = particleData(backend?.predictedMmsi === backend?.selectedMmsi ? backend?.prediction ?? null : null);
   const beforePoly = particles.length > 0 ? searchLoop?.before_polygon?.geometry?.coordinates?.[0] ?? null : null;
   const afterPoly = showAfterPolygon ? searchLoop?.after_polygon?.geometry?.coordinates?.[0] ?? null : null;
+  const recommendedSensorId = sensorSandbox?.recommendedSensorId;
+  const sandboxTarget = sensorSandbox?.target;
+  const sandboxObservation = showSensorResult ? sensorSandbox?.observation : null;
 
   const layers = [
     new PolygonLayer({
@@ -172,6 +193,36 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
       getLineColor: [212, 165, 82, 160],
       getLineWidth: 1,
       lineWidthMinPixels: 1,
+    }),
+    new PolygonLayer({
+      id: 'sandbox-sensor-coverage',
+      data: sensorSandbox?.sensors ?? [],
+      getPolygon: (d: any) => d.coverage,
+      getFillColor: (d: SandboxSensor) => sensorFillColor(d, recommendedSensorId),
+      getLineColor: (d: SandboxSensor) => sensorLineColor(d, recommendedSensorId),
+      getLineWidth: (d: SandboxSensor) => d.id === recommendedSensorId ? 2 : 1,
+      lineWidthMinPixels: 1,
+      stroked: true,
+    }),
+    new PolygonLayer({
+      id: 'sandbox-search-before',
+      data: sandboxTarget ? [{ polygon: sandboxTarget.predictionBefore }] : [],
+      getPolygon: (d: any) => d.polygon,
+      getFillColor: [56, 189, 248, 24],
+      getLineColor: [56, 189, 248, 205],
+      getLineWidth: 2,
+      lineWidthMinPixels: 2,
+      stroked: true,
+    }),
+    new PolygonLayer({
+      id: 'sandbox-search-after',
+      data: sandboxObservation && sandboxTarget ? [{ polygon: sandboxTarget.predictionAfter }] : [],
+      getPolygon: (d: any) => d.polygon,
+      getFillColor: [52, 211, 153, 22],
+      getLineColor: [52, 211, 153, 225],
+      getLineWidth: 2,
+      lineWidthMinPixels: 2,
+      stroked: true,
     }),
     new PathLayer({
       id: 'scenario-tracks',
@@ -198,6 +249,15 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
       getColor: [120, 220, 165, 210],
       getWidth: 2,
       widthMinPixels: 1,
+      rounded: true,
+    }),
+    new PathLayer({
+      id: 'sandbox-projected-track',
+      data: sandboxTarget ? [{ path: sandboxTarget.projectedTrack }] : [],
+      getPath: (d: any) => d.path,
+      getColor: [52, 211, 153, 230],
+      getWidth: 2.5,
+      widthMinPixels: 2,
       rounded: true,
     }),
     new PolygonLayer({
@@ -230,6 +290,30 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
       getFillColor: (d: any) => d.weight > 0.7 ? [239, 68, 68, 200] : d.weight > 0.3 ? [251, 191, 36, 160] : [56, 189, 248, 100],
       getLineColor: [226, 232, 240, 60],
       stroked: false,
+    }),
+    new ScatterplotLayer({
+      id: 'sandbox-last-ais',
+      data: sandboxTarget ? [{ position: sandboxTarget.lastAisPosition }] : [],
+      getPosition: (d: any) => d.position,
+      getRadius: 2600 * markerScale,
+      radiusMinPixels: 12,
+      radiusMaxPixels: 28,
+      getFillColor: [245, 158, 11, 90],
+      getLineColor: [245, 158, 11, 255],
+      lineWidthMinPixels: 2,
+      stroked: true,
+    }),
+    new ScatterplotLayer({
+      id: 'sandbox-sensor-hit',
+      data: sandboxObservation ? [{ position: sandboxObservation.position }] : [],
+      getPosition: (d: any) => d.position,
+      getRadius: 1900 * markerScale,
+      radiusMinPixels: 9,
+      radiusMaxPixels: 22,
+      getFillColor: [52, 211, 153, 140],
+      getLineColor: [226, 232, 240, 240],
+      lineWidthMinPixels: 2,
+      stroked: true,
     }),
     new ScatterplotLayer({
       id: 'selected-vessel-halo',
@@ -336,6 +420,21 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
       background: true,
       getBackgroundColor: [3, 7, 18, 220],
       backgroundPadding: [4, 2],
+    }),
+    new TextLayer({
+      id: 'sandbox-labels',
+      data: [
+        ...(sandboxTarget ? [{ text: `LAST AIS ${sandboxTarget.id}`, position: sandboxTarget.lastAisPosition }] : []),
+        ...(sandboxObservation ? [{ text: `SIM ${sandboxObservation.sensorId} HIT`, position: sandboxObservation.position }] : []),
+      ],
+      getPosition: (d: any) => d.position,
+      getText: (d: any) => d.text,
+      getSize: 11,
+      getColor: [226, 232, 240, 240],
+      getPixelOffset: [0, -20],
+      background: true,
+      getBackgroundColor: [3, 7, 18, 230],
+      backgroundPadding: [5, 3],
     }),
     new TextLayer({
       id: 'scenario-labels',
