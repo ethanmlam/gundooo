@@ -124,7 +124,7 @@ def build():
         frac = i / 9
         demo_rows.append({
             'MMSI': '309253000', 'BaseDateTime': t.strftime('%Y-%m-%d %H:%M:%S'),
-            'LAT': f'{33.748 - 0.062 * frac:.6f}', 'LON': f'{-118.210 - 0.118 * frac:.6f}',
+            'LAT': f'{33.675 - 0.075 * frac:.6f}', 'LON': f'{-118.330 - 0.150 * frac:.6f}',
             'SOG': '12.4', 'COG': '236.0', 'Heading': '235', 'VesselName': 'GRACEFUL LEADER',
             'IMO': 'IMO0000000', 'CallSign': 'ARGUS1', 'VesselType': '70', 'Status': '0',
             'Length': '189', 'Width': '32', 'Draft': '8.4', 'Cargo': '70', 'TransceiverClass': 'A',
@@ -133,7 +133,7 @@ def build():
         frac = i / 9
         demo_rows.append({
             'MMSI': '309253000', 'BaseDateTime': t.strftime('%Y-%m-%d %H:%M:%S'),
-            'LAT': f'{33.055 - 0.055 * frac:.6f}', 'LON': f'{-119.145 - 0.145 * frac:.6f}',
+            'LAT': f'{33.300 - 0.105 * frac:.6f}', 'LON': f'{-118.900 - 0.180 * frac:.6f}',
             'SOG': '11.8', 'COG': '238.0', 'Heading': '237', 'VesselName': 'GRACEFUL LEADER',
             'IMO': 'IMO0000000', 'CallSign': 'ARGUS1', 'VesselType': '70', 'Status': '0',
             'Length': '189', 'Width': '32', 'Draft': '8.4', 'Cargo': '70', 'TransceiverClass': 'A',
