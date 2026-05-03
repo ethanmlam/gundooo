@@ -123,8 +123,8 @@ function vesselIcon(vessel: ApiVessel) {
 
 function vesselIconSize(vessel: ApiVessel, selectedMmsi?: number) {
   const speed = vessel.last_position.speed_knots ?? 0;
-  if (vessel.mmsi === selectedMmsi) return speed < 0.8 ? 22 : 34;
-  return speed < 0.8 ? 12 : 23;
+  if (vessel.mmsi === selectedMmsi) return speed < 0.8 ? 650 : 1100;
+  return speed < 0.8 ? 340 : 650;
 }
 
 const VESSEL_ICON_ATLAS = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
@@ -157,12 +157,78 @@ function sensorFillColor(sensor: SandboxSensor, recommendedSensorId?: string): [
   return [r, g, b, alpha];
 }
 
+function timeAgo(ts?: string | null) {
+  if (!ts) return null;
+  const t = new Date(ts).getTime();
+  if (Number.isNaN(t)) return null;
+  const sec = Math.max(0, Math.floor((Date.now() - t) / 1000));
+  if (sec < 60) return `${sec}s ago`;
+  if (sec < 3600) return `${Math.floor(sec / 60)} min ago`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)} hr ago`;
+  return `${Math.floor(sec / 86400)} d ago`;
+}
+
+const HTML_ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+function esc(value: unknown) {
+  return String(value ?? '').replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]);
+}
+
+const TOOLTIP_STYLE = {
+  backgroundColor: '#ffffff',
+  color: '#0b1220',
+  fontSize: '12px',
+  lineHeight: '1.45',
+  padding: '8px 12px',
+  borderRadius: '4px',
+  boxShadow: '0 6px 20px rgba(0,0,0,0.35)',
+  border: '1px solid rgba(15,23,42,0.08)',
+  fontFamily: 'inherit',
+  pointerEvents: 'none' as const,
+};
+
+function vesselTooltip(info: any): { html: string; style: typeof TOOLTIP_STYLE } | null {
+  const { layer, object } = info ?? {};
+  if (!layer || !object) return null;
+
+  if (layer.id === 'backend-vessel-arrows') {
+    const name = object.vessel_name || `MMSI ${object.mmsi}`;
+    const pos = object.last_position ?? {};
+    const speed = pos.speed_knots != null ? `${Number(pos.speed_knots).toFixed(1)} kn` : '—';
+    const heading = pos.heading != null ? `${Math.round(Number(pos.heading))}°` : '—';
+    const ago = timeAgo(pos.timestamp);
+    const type = object.vessel_type ? `<div>Type: <b>${esc(object.vessel_type)}</b></div>` : '';
+    const seen = ago ? `<div>Position received: <b>${esc(ago)}</b></div>` : '';
+    return { html: `<div><b>${esc(name)}</b> at <b>${esc(speed)} / ${esc(heading)}</b></div>${type}${seen}`, style: TOOLTIP_STYLE };
+  }
+
+  if (layer.id === 'selected-dark-event') {
+    const name = object.vessel_name || `MMSI ${object.mmsi}`;
+    const speed = object.last_known_speed != null ? `${Number(object.last_known_speed).toFixed(1)} kn` : '—';
+    const heading = object.last_known_heading != null ? `${Math.round(Number(object.last_known_heading))}°` : '—';
+    const wentDark = timeAgo(object.dark_start);
+    const dur = object.duration_hours != null ? `<div>Dark for: <b>${Number(object.duration_hours).toFixed(1)} hr</b></div>` : '';
+    const seen = wentDark ? `<div>Went dark: <b>${esc(wentDark)}</b></div>` : '';
+    return { html: `<div><b>${esc(name)}</b> at <b>${esc(speed)} / ${esc(heading)}</b></div>${dur}${seen}`, style: TOOLTIP_STYLE };
+  }
+
+  if (layer.id === 'live-ais-vessels') {
+    const name = object.name || object.label || `MMSI ${object.mmsi}`;
+    const speed = object.sog != null ? `${Number(object.sog).toFixed(1)} kn` : '—';
+    const headingRaw = object.heading ?? object.cog;
+    const heading = headingRaw != null ? `${Math.round(Number(headingRaw))}°` : '—';
+    const ago = timeAgo(object.lastSeen);
+    const seen = ago ? `<div>Position received: <b>${esc(ago)}</b></div>` : '';
+    return { html: `<div><b>${esc(name)}</b> at <b>${esc(speed)} / ${esc(heading)}</b></div>${seen}`, style: TOOLTIP_STYLE };
+  }
+
+  return null;
+}
+
 export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi, searchLoop, showAfterPolygon, sensorSandbox, showSensorResult }: Props) {
   const [basemap, setBasemap] = useState<BasemapKey>('dark');
+  const [showTrails, setShowTrails] = useState(true);
   const initialZoom = scenario.defaultZoom ?? 7.2;
-  const [zoom, setZoom] = useState(initialZoom);
   const mapStyle = useMemo(() => BASEMAPS[basemap].style, [basemap]);
-  const markerScale = Math.max(0.7, Math.min(1.75, 0.7 + (zoom - 6.2) * 0.22));
   const showLiveAis = !backend?.isBackendOnline && (scenario.id === 'strait-of-hormuz' || scenario.id === 'persian-gulf');
   const { snapshot, isFresh } = useLiveAis(showLiveAis);
   const liveVessels = isFresh ? snapshot.vessels : [];
@@ -235,9 +301,9 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
     }),
     new PathLayer({
       id: 'backend-vessel-tracks',
-      data: backendVessels.filter((v) => (v.track_points?.length ?? 0) > 1),
+      data: showTrails ? backendVessels.filter((v) => (v.track_points?.length ?? 0) > 1) : [],
       getPath: vesselTrack,
-      getColor: [96, 165, 250, 135],
+      getColor: [125, 211, 252, 150],
       getWidth: 1.5,
       widthMinPixels: 1,
       rounded: true,
@@ -295,37 +361,40 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
       id: 'sandbox-last-ais',
       data: sandboxTarget ? [{ position: sandboxTarget.lastAisPosition }] : [],
       getPosition: (d: any) => d.position,
-      getRadius: 2600 * markerScale,
-      radiusMinPixels: 12,
-      radiusMaxPixels: 28,
+      getRadius: 1150,
+      radiusMinPixels: 6,
+      radiusMaxPixels: 26,
       getFillColor: [245, 158, 11, 90],
       getLineColor: [245, 158, 11, 255],
       lineWidthMinPixels: 2,
       stroked: true,
+      billboard: true,
     }),
     new ScatterplotLayer({
       id: 'sandbox-sensor-hit',
       data: sandboxObservation ? [{ position: sandboxObservation.position }] : [],
       getPosition: (d: any) => d.position,
-      getRadius: 1900 * markerScale,
-      radiusMinPixels: 9,
+      getRadius: 850,
+      radiusMinPixels: 4,
       radiusMaxPixels: 22,
       getFillColor: [52, 211, 153, 140],
       getLineColor: [226, 232, 240, 240],
       lineWidthMinPixels: 2,
       stroked: true,
+      billboard: true,
     }),
     new ScatterplotLayer({
       id: 'selected-vessel-halo',
       data: backendVessels.filter((v) => v.mmsi === backend?.selectedMmsi),
       getPosition: vesselPosition,
-      getRadius: 2100 * markerScale,
-      radiusMinPixels: 10,
-      radiusMaxPixels: 38,
+      getRadius: 900,
+      radiusMinPixels: 5,
+      radiusMaxPixels: 34,
       getFillColor: [15, 23, 42, 70],
-      getLineColor: [245, 158, 11, 240],
+      getLineColor: [0, 0, 0, 240],
       lineWidthMinPixels: 2,
       stroked: true,
+      billboard: true,
     }),
     new IconLayer({
       id: 'backend-vessel-arrows',
@@ -335,9 +404,10 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
       getIcon: vesselIcon,
       getPosition: vesselPosition,
       getAngle: vesselAngle,
-      getSize: (d: ApiVessel) => vesselIconSize(d, backend?.selectedMmsi) * markerScale,
-      sizeMinPixels: 5,
-      sizeMaxPixels: 48,
+      getSize: (d: ApiVessel) => vesselIconSize(d, backend?.selectedMmsi),
+      sizeUnits: 'meters',
+      sizeMinPixels: 3,
+      sizeMaxPixels: 34,
       getColor: (d: ApiVessel) => vesselColor(d, backend?.selectedMmsi),
       pickable: true,
       onClick: ({ object }: any) => object?.mmsi && onSelectMmsi?.(object.mmsi),
@@ -346,33 +416,35 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
       id: 'selected-dark-event',
       data: darkEvents.filter((event) => event.mmsi === backend?.selectedMmsi),
       getPosition: darkEventPosition,
-      getRadius: 2100,
-      radiusMinPixels: 12,
-      radiusMaxPixels: 22,
+      getRadius: 900,
+      radiusMinPixels: 6,
+      radiusMaxPixels: 26,
       getFillColor: [245, 158, 11, 75],
       getLineColor: [245, 158, 11, 245],
       lineWidthMinPixels: 3,
       stroked: true,
       pickable: true,
       onClick: ({ object }: any) => object?.mmsi && onSelectMmsi?.(object.mmsi),
+      billboard: true,
     }),
     new ScatterplotLayer({
       id: 'scenario-track-heads',
       data: backend?.isBackendOnline ? [] : scenario.vesselTracks.map((track) => ({ ...track, position: track.path[track.path.length - 1] })),
       getPosition: (d: any) => d.position,
-      getRadius: 2500 * markerScale,
-      radiusMinPixels: 4,
-      radiusMaxPixels: 20,
+      getRadius: 1100,
+      radiusMinPixels: 2,
+      radiusMaxPixels: 18,
       getFillColor: (d: any) => d.severity === 'HIGH' ? [245, 158, 11, 190] : [120, 150, 185, 150],
       getLineColor: [255, 255, 255, 220],
       lineWidthMinPixels: 1,
       stroked: true,
+      billboard: true,
     }),
     new PathLayer({
       id: 'live-ais-trails',
-      data: liveVessels.filter((v) => v.track?.length > 1),
+      data: showTrails ? liveVessels.filter((v) => v.track?.length > 1) : [],
       getPath: (d: any) => d.track,
-      getColor: [83, 178, 255, 145],
+      getColor: [125, 211, 252, 160],
       getWidth: 1.5,
       widthMinPixels: 1,
       rounded: true,
@@ -381,15 +453,16 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
       id: 'live-ais-vessels',
       data: liveVessels,
       getPosition: (d: any) => [d.lng, d.lat],
-      getRadius: (d: any) => (d.sog != null && d.sog < 1 ? 1150 : 800) * markerScale,
-      radiusMinPixels: 3,
+      getRadius: (d: any) => (d.sog != null && d.sog < 1 ? 500 : 350),
+      radiusMinPixels: 1,
       radiusMaxPixels: 14,
-      getFillColor: (d: any) => d.sog != null && d.sog < 1 ? [251, 191, 36, 220] : [125, 211, 252, 200],
+      getFillColor: (d: any) => d.sog != null && d.sog < 1 ? [251, 191, 36, 220] : [29, 78, 216, 235],
       getLineColor: [255, 255, 255, 210],
       lineWidthMinPixels: 1,
       stroked: true,
       pickable: true,
       onClick: ({ object }: any) => object?.mmsi && onSelectMmsi?.(Number(object.mmsi)),
+      billboard: true,
     }),
     new TextLayer({
       id: 'backend-labels',
@@ -455,7 +528,7 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
       initialViewState={{ longitude: scenario.center[0], latitude: scenario.center[1], zoom: initialZoom, pitch: 34, bearing: -18 }}
       controller={true}
       layers={layers}
-      onViewStateChange={({ viewState }: any) => setZoom(viewState.zoom)}
+      getTooltip={vesselTooltip}
     >
       <Map mapStyle={mapStyle as any} />
     </DeckGL>
@@ -465,6 +538,12 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
         className={key === basemap ? 'active' : ''}
         onClick={() => setBasemap(key)}
       >{BASEMAPS[key].label}</button>)}
+    </div>
+    <div className="trails-toggle basemap-toggle" aria-label="Trails toggle">
+      <button
+        className={showTrails ? 'active' : ''}
+        onClick={() => setShowTrails((v) => !v)}
+      >Trails {showTrails ? 'On' : 'Off'}</button>
     </div>
   </div>;
 }
