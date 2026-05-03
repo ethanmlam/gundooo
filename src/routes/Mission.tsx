@@ -32,14 +32,19 @@ function formatDuration(hours?: number) {
   return `${hours.toFixed(1)} hr`;
 }
 
-function StraitSummary({ theater }: SidebarProps) {
+function StraitSummary({ theater, scenario, backend }: SidebarProps) {
   return <section className="stripe-card hero-card-mini">
     <div className="stripe-card-head">
       <div className="icon-tile warm"><Compass03Icon width={17} height={17}/></div>
       <div><span>Watch area</span><h3>{theater.name}</h3></div>
       <b className={`status-pill ${theater.risk.toLowerCase()}`}>{theater.risk}</b>
     </div>
-    <p>Ship-by-ship profiling for vessels transiting the chokepoint.</p>
+    <p>Problem Statement 1: maintain custody after a target goes dark, then retask the next best sensor.</p>
+    <div className="sidebar-metrics">
+      <div><b>{backend.vessels.length || scenario.vesselTracks.length}</b><span>tracked</span></div>
+      <div><b>{backend.darkEvents.length || backend.triage.length || 2}</b><span>flagged</span></div>
+      <div><b>{backend.isBackendOnline ? 'api' : 'demo'}</b><span>mode</span></div>
+    </div>
   </section>;
 }
 
@@ -72,6 +77,25 @@ function SourceProvenanceCard({ sandbox }: { sandbox: HormuzSensorSandbox }) {
         <div><b>{source.name}</b><p>{source.detail}</p></div>
         <em>{source.status}</em>
       </div>)}
+    </div>
+  </section>;
+}
+
+function ThreatQueueCard({ backend }: { backend: BackendState }) {
+  const setSelectedMmsi = useAppStore((s) => s.setSelectedMmsi);
+  const rows = backend.triage.slice(0, 6);
+  return <section className="stripe-card anomaly-card essential-card">
+    <div className="stripe-card-head compact">
+      <div className="icon-tile danger"><Target05Icon width={17} height={17}/></div>
+      <div><span>Threat queue</span><h3>{rows.length ? 'AIS-dark targets' : 'No ranked gaps yet'}</h3></div>
+    </div>
+    <div className="anomaly-list">
+      {rows.map((item) => <button key={item.mmsi} onClick={() => setSelectedMmsi(item.mmsi)} className={`anomaly-row ${item.mmsi === backend.selectedMmsi ? 'selected' : ''}`}>
+        <b>{item.vessel_name}</b>
+        <span>MMSI {item.mmsi} · {item.intent.replace('_', ' ')} · dark {formatDuration(item.dark_duration_hours)}</span>
+        <em>Threat score {item.threat_score}</em>
+      </button>)}
+      {!rows.length && <p>{backend.isBackendOnline ? 'Waiting for triage results.' : 'Backend offline, using replay vessels.'}</p>}
     </div>
   </section>;
 }
@@ -131,25 +155,31 @@ function SensorSandboxCard({ sandbox, applied, onApply, onReset }: { sandbox: Ho
   </section>;
 }
 
-function NextStepCard({ backend, searchLoop, showAfterPolygon, onSimulate }: { backend: BackendState; searchLoop: SearchLoopData | null; showAfterPolygon: boolean; onSimulate: () => void }) {
-  const hasPrediction = backend.prediction && backend.predictedMmsi === backend.selectedMmsi;
-  return <section className="stripe-card compact-card">
+function SensorFusionCard({ backend, searchLoop, showAfterPolygon, onFuse }: { backend: BackendState; searchLoop: SearchLoopData | null; showAfterPolygon: boolean; onFuse: () => void }) {
+  const hasPrediction = Boolean(backend.prediction && backend.predictedMmsi === backend.selectedMmsi);
+  const topTasking = backend.recommendation?.taskings?.[0] ?? searchLoop?.recommended_sensor;
+  return <section className="stripe-card compact-card fusion-card">
     <div className="stripe-card-head compact">
       <div className="icon-tile green"><ZapFastIcon width={17} height={17}/></div>
-      <div><span>Prediction</span><h3>{hasPrediction ? 'Projected path active' : 'Project selected vessel'}</h3></div>
+      <div><span>P1 sensor loop</span><h3>{topTasking ? `${topTasking.sensor_id} next best look` : hasPrediction ? 'Search recommendation loading' : 'Maintain custody'}</h3></div>
     </div>
-    <p>{hasPrediction ? 'Cloud is based on this selected boat. Click another boat to clear it.' : 'Run inference for the currently selected boat. The old cloud clears when selection changes.'}</p>
-    <button className="primary-action" onClick={backend.predict} disabled={backend.isPredicting}>
-      <ZapFastIcon width={15} height={15}/> {backend.isPredicting ? 'Projecting...' : 'Run prediction'}
-    </button>
-    {hasPrediction && searchLoop && <>
-      <button className="primary-action" onClick={onSimulate} disabled={showAfterPolygon} style={{ marginTop: 6 }}>
-        <Target05Icon width={15} height={15}/> {showAfterPolygon ? 'Sensor update applied' : 'Simulate sensor update'}
+    <p>{hasPrediction ? 'Prediction cloud is live. Fuse a simulated SAR/radar hit to tighten custody, then retask.' : 'Project the selected AIS-dark target into a probability cloud.'}</p>
+    {topTasking && <div className="tasking-mini">
+      <b>{topTasking.sensor_id}</b>
+      {'center_lat' in topTasking && 'center_lon' in topTasking && <span>{Number(topTasking.center_lat).toFixed(3)}, {Number(topTasking.center_lon).toFixed(3)}</span>}
+      <em>{Number(topTasking.expected_entropy_reduction ?? 0).toFixed(2)} expected entropy reduction</em>
+    </div>}
+    <div className="action-stack">
+      <button className="primary-action" onClick={backend.predict} disabled={backend.isPredicting}>
+        <ZapFastIcon width={15} height={15}/> {backend.isPredicting ? 'Projecting...' : hasPrediction ? 'Re-run prediction' : 'Run prediction'}
       </button>
-      {showAfterPolygon && <p className="mono" style={{ marginTop: 6, fontSize: '11px', fontWeight: 600, opacity: 0.85 }}>
-        {searchLoop.recommended_sensor.sensor_id} recommended · {Math.round(searchLoop.area_reduction_pct)}% area reduction
+      <button className="secondary-action" onClick={onFuse} disabled={!hasPrediction || backend.isUpdating}>
+        <Signal03Icon width={15} height={15}/> {backend.isUpdating ? 'Fusing detection...' : showAfterPolygon ? 'Detection fused' : 'Inject SAR detection'}
+      </button>
+      {showAfterPolygon && searchLoop && <p className="mono sandbox-note">
+        {Math.round(searchLoop.area_reduction_pct)}% search-area reduction after sensor hit
       </p>}
-    </>}
+    </div>
   </section>;
 }
 
@@ -194,14 +224,15 @@ function profileFromLive(vessel: LiveAisVessel | undefined, selectedMmsi: number
 function VesselProfile({ backend, snapshot, collapsed, onToggle }: { backend: BackendState; snapshot: LiveAisSnapshot; collapsed: boolean; onToggle: () => void }) {
   const selectedVessel = backend.vessels.find((v) => v.mmsi === backend.selectedMmsi);
   const selectedEvent = backend.darkEvents.find((event) => event.mmsi === backend.selectedMmsi);
+  const selectedTriage = backend.triage.find((event) => event.mmsi === backend.selectedMmsi);
   const liveProfile = profileFromLive(snapshot.vessels.find((v) => Number(v.mmsi) === backend.selectedMmsi), backend.selectedMmsi);
-  const title = liveProfile?.title || selectedVessel?.vessel_name || selectedEvent?.vessel_name || `MMSI ${backend.selectedMmsi}`;
-  const threatScore = liveProfile?.risk ?? (selectedEvent ? 82 : 48);
+  const title = liveProfile?.title || selectedVessel?.vessel_name || selectedEvent?.vessel_name || selectedTriage?.vessel_name || `MMSI ${backend.selectedMmsi}`;
+  const threatScore = liveProfile?.risk ?? selectedTriage?.threat_score ?? (selectedEvent ? 82 : 48);
   const evidence = liveProfile?.evidence ?? [
-    selectedEvent ? `Dark for ${formatDuration(selectedEvent.duration_hours)}` : 'Scenario vessel selected',
-    `Movement: ${selectedVessel?.last_position.speed_knots?.toFixed?.(1) ?? selectedEvent?.last_known_speed?.toFixed?.(1) ?? '13.2'} kn`,
-    'Deviation from nearest shipping lane analyzed',
-    'Flag state risk: non-US registry flagged',
+    selectedEvent ? `Dark for ${formatDuration(selectedEvent.duration_hours)}` : selectedTriage ? `Dark for ${formatDuration(selectedTriage.dark_duration_hours)}` : 'Scenario vessel selected',
+    selectedTriage ? `Intent: ${selectedTriage.intent.replace('_', ' ')}` : `Movement: ${selectedVessel?.last_position.speed_knots?.toFixed?.(1) ?? selectedEvent?.last_known_speed?.toFixed?.(1) ?? '13.2'} kn`,
+    selectedTriage?.reasoning ?? 'Deviation from nearest shipping lane analyzed',
+    'Recommended next sensor look minimizes uncertainty before reacquisition',
   ];
 
   return <aside className={`c2-right panel vessel-profile-panel ${collapsed ? 'sidebar-collapsed' : ''}`}>
@@ -215,9 +246,8 @@ function VesselProfile({ backend, snapshot, collapsed, onToggle }: { backend: Ba
       : <>
           <div className="panel-title">Selected vessel</div>
           <h2>{title}</h2>
-          <p>{liveProfile?.subtitle || selectedVessel?.vessel_type || selectedEvent?.vessel_type || 'Click any ship to inspect it.'}</p>
-          {/* TODO: replace hardcoded risk scores (82/48) with ML model output */}
-          <div className="profile-score"><span>Threat score</span><b>{threatScore}</b><em>{liveProfile?.status ?? 'classified by ML model'}</em></div>
+          <p>{liveProfile?.subtitle || selectedVessel?.vessel_type || selectedEvent?.vessel_type || selectedTriage?.vessel_type || 'Click any ship to inspect it.'}</p>
+          <div className="profile-score"><span>Threat score</span><b>{threatScore}</b><em>{liveProfile?.status ?? selectedTriage?.intent?.replace('_', ' ') ?? 'classified by model'}</em></div>
           <div className="identity-card">
             <div><span>MMSI</span><b>{backend.selectedMmsi}</b><p>primary identifier</p></div>
             <div><span>Last seen</span><b>{liveProfile?.location || (selectedVessel ? `${selectedVessel.last_position.lat.toFixed(3)}, ${selectedVessel.last_position.lon.toFixed(3)}` : selectedEvent ? `${selectedEvent.last_known_lat.toFixed(3)}, ${selectedEvent.last_known_lon.toFixed(3)}` : 'scenario track')}</b><p>{liveProfile?.lastSeen || selectedVessel?.last_position.timestamp || selectedEvent?.dark_start || 'replay'}</p></div>
@@ -290,23 +320,27 @@ export default function Mission() {
   const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState(false);
   useEffect(() => setShowAfterPolygon(false), [selectedMmsi]);
   useEffect(() => setSandboxApplied(false), [theater.id]);
-  const liveEnabled = !backend.isBackendOnline && (scenario.id === 'strait-of-hormuz' || scenario.id === 'persian-gulf');
+  const liveEnabled = !backend.isBackendOnline && !isHormuz && (scenario.id === 'strait-of-hormuz' || scenario.id === 'persian-gulf');
   const { snapshot } = useLiveAis(liveEnabled);
   const displaySnapshot = isHormuz ? { ...snapshot, vessels: [] } : snapshot;
-
   const isInitialLoad = !isHormuz && backend.isLoading && !backend.isBackendOnline;
   const trackedCount = displayBackend.vessels.length || scenario.vesselTracks.length;
-  const flaggedCount = displayBackend.darkEvents.length || 2;
+  const flaggedCount = displayBackend.darkEvents.length || displayBackend.triage.length || 2;
   const layoutClassName = [
     'mission-page c2-layout lean-layout',
     leftSidebarCollapsed ? 'left-sidebar-collapsed' : '',
     rightSidebarCollapsed ? 'right-sidebar-collapsed' : '',
   ].filter(Boolean).join(' ');
 
+  const fuseDetection = () => {
+    setShowAfterPolygon(true);
+    backend.updateWithSyntheticDetection();
+  };
+
   return <main className={layoutClassName}>
     <header className="mission-topbar panel">
       <Link to="/theaters"><ArrowLeftIcon width={15} height={15}/> Theaters</Link>
-      <div><h1>GUNDOOO / {theater.name} {isHormuz ? 'Sensor Sandbox' : 'Vessel Watch'}</h1><p>{isHormuz ? 'Exercise environment: cached AIS-style tracks, weather context, simulated sensor tasking, and model search regions.' : 'Ships on the map are pre-profiled by movement, vessel type, and chokepoint context.'}</p></div>
+      <div><h1>GUNDOOO / {theater.name} Sensor Custody</h1><p>Rank AIS-dark targets, predict reachable area, fuse SAR/radar hits, and recommend the next best sensor look.</p></div>
       <div className="topbar-metrics">
         <div><b>{trackedCount}</b><span>tracked</span></div>
         <div><b>{flaggedCount}</b><span>flagged</span></div>
@@ -317,7 +351,7 @@ export default function Mission() {
       ? <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, minHeight: '60vh', opacity: 0.7 }}>
           <Signal03Icon width={36} height={36} className="loading-pulse" />
           <p style={{ fontSize: 14, letterSpacing: '0.05em' }}>Loading vessel data...</p>
-          <p style={{ fontSize: 12, opacity: 0.5 }}>This usually takes 10–15 seconds</p>
+          <p style={{ fontSize: 12, opacity: 0.5 }}>This usually takes 10-15 seconds</p>
         </div>
       : <>
         <aside className={`c2-left panel production-sidebar lean-sidebar ${leftSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
@@ -327,32 +361,19 @@ export default function Mission() {
                 <RailIcon label={`Watch area: ${theater.name}`}><Compass03Icon width={18} height={18}/></RailIcon>
                 <RailIcon label={isHormuz ? 'Exercise provenance' : displayBackend.isBackendOnline ? 'Backend feed online' : 'Replay feed'}><Database03Icon width={18} height={18}/></RailIcon>
                 <RailIcon label={`${displayBackend.vessels.length || scenario.vesselTracks.length} vessel profiles`}><RouteIcon width={18} height={18}/></RailIcon>
-                {isHormuz
-                  ? <>
-                      <RailIcon label={sandboxApplied ? 'Sensor hit applied' : 'Sensor sandbox ready'}><Target05Icon width={18} height={18}/></RailIcon>
-                      <RailIcon label={`${hormuzSensorSandbox.weather.windKnots} kt wind, ${hormuzSensorSandbox.weather.visibilityKm} km visibility`}><Signal03Icon width={18} height={18}/></RailIcon>
-                    </>
-                  : <button
-                      type="button"
-                      className="rail-icon rail-action"
-                      onClick={backend.predict}
-                      disabled={backend.isPredicting}
-                      aria-label={backend.isPredicting ? 'Projecting selected vessel' : 'Run prediction'}
-                      title={backend.isPredicting ? 'Projecting selected vessel' : 'Run prediction'}
-                    >
-                      <ZapFastIcon width={18} height={18}/>
-                    </button>}
+                <RailIcon label={isHormuz ? 'Sensor sandbox ready' : 'P1 sensor loop'}><Target05Icon width={18} height={18}/></RailIcon>
               </div>
             : <>
                 <StraitSummary theater={theater} scenario={scenario} backend={displayBackend} />
                 {isHormuz && <SourceProvenanceCard sandbox={hormuzSensorSandbox} />}
+                {!isHormuz && <ThreatQueueCard backend={backend} />}
                 <ShipRosterCard snapshot={displaySnapshot} backend={displayBackend} scenario={scenario} />
                 {isHormuz
                   ? <>
                       <SensorSandboxCard sandbox={hormuzSensorSandbox} applied={sandboxApplied} onApply={() => setSandboxApplied(true)} onReset={() => setSandboxApplied(false)} />
                       <WeatherCard sandbox={hormuzSensorSandbox} />
                     </>
-                  : <NextStepCard backend={backend} searchLoop={searchLoop} showAfterPolygon={showAfterPolygon} onSimulate={() => setShowAfterPolygon(true)} />}
+                  : <SensorFusionCard backend={backend} searchLoop={searchLoop} showAfterPolygon={showAfterPolygon} onFuse={fuseDetection} />}
               </>}
         </aside>
 
@@ -365,7 +386,7 @@ export default function Mission() {
             searchLoop={searchLoop}
             showAfterPolygon={showAfterPolygon}
             sensorSandbox={isHormuz ? hormuzSensorSandbox : undefined}
-            showSensorResult={isHormuz ? sandboxApplied : false}
+            showSensorResult={isHormuz ? sandboxApplied : showAfterPolygon}
           />
         </section>
 

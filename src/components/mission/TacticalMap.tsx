@@ -235,6 +235,7 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
   const backendVessels = backend?.vessels ?? [];
   const darkEvents = backend?.darkEvents ?? [];
   const particles = particleData(backend?.predictedMmsi === backend?.selectedMmsi ? backend?.prediction ?? null : null);
+  const sensorTaskings = backend?.predictedMmsi === backend?.selectedMmsi ? backend?.recommendation?.taskings ?? [] : [];
   const beforePoly = particles.length > 0 ? searchLoop?.before_polygon?.geometry?.coordinates?.[0] ?? null : null;
   const afterPoly = showAfterPolygon ? searchLoop?.after_polygon?.geometry?.coordinates?.[0] ?? null : null;
   const recommendedSensorId = sensorSandbox?.recommendedSensorId;
@@ -396,6 +397,19 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
       stroked: true,
       billboard: true,
     }),
+    new ScatterplotLayer({
+      id: 'sensor-taskings',
+      data: sensorTaskings,
+      getPosition: (d: any) => [d.center_lon, d.center_lat],
+      getRadius: (_d: any, info: any) => info.index === 0 ? 4200 : 2600,
+      radiusMinPixels: 13,
+      radiusMaxPixels: 38,
+      getFillColor: (_d: any, info: any) => info.index === 0 ? [52, 211, 153, 42] : [56, 189, 248, 24],
+      getLineColor: (_d: any, info: any) => info.index === 0 ? [52, 211, 153, 240] : [56, 189, 248, 150],
+      lineWidthMinPixels: 2,
+      stroked: true,
+      billboard: true,
+    }),
     new IconLayer({
       id: 'backend-vessel-arrows',
       data: backendVessels,
@@ -463,6 +477,21 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
       pickable: true,
       onClick: ({ object }: any) => object?.mmsi && onSelectMmsi?.(Number(object.mmsi)),
       billboard: true,
+    }),
+    new TextLayer({
+      id: 'sensor-tasking-labels',
+      data: sensorTaskings.slice(0, 3).map((task, index) => ({
+        text: index === 0 ? `${task.sensor_id} NEXT LOOK` : task.sensor_id,
+        position: [task.center_lon, task.center_lat],
+      })),
+      getPosition: (d: any) => d.position,
+      getText: (d: any) => d.text,
+      getSize: 11,
+      getColor: [209, 250, 229, 245],
+      getPixelOffset: [0, -22],
+      background: true,
+      getBackgroundColor: [6, 78, 59, 220],
+      backgroundPadding: [5, 3],
     }),
     new TextLayer({
       id: 'backend-labels',

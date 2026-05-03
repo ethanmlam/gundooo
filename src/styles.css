@@ -246,6 +246,11 @@ h1, h2, h3 { margin: 0; letter-spacing: -.02em; }
 .profile-score span { grid-area: label; color: #6b7280; font-size: 9px; text-transform: uppercase; letter-spacing: .12em; font-weight: 700; }
 .profile-score b { grid-area: score; color: #D4915C; font-size: 28px; line-height: 1; letter-spacing: -.04em; font-family: 'IBM Plex Mono', monospace; }
 .profile-score em { grid-area: status; color: #9ca3af; font-size: 10px; font-style: normal; font-weight: 600; font-family: 'IBM Plex Mono', monospace; }
+.tasking-mini { margin-top: 8px; border: 1px solid rgba(70,167,88,.22); background: rgba(70,167,88,.06); border-radius: 2px; padding: 7px; display: grid; gap: 2px; }
+.tasking-mini b { color: #8fd19e; font-size: 11px; font-family: 'IBM Plex Mono', monospace; }
+.tasking-mini span { color: #9ca3af; font-size: 10px; font-family: 'IBM Plex Mono', monospace; }
+.tasking-mini em { color: #D4915C; font-size: 10px; font-style: normal; font-weight: 700; font-family: 'IBM Plex Mono', monospace; }
+.fusion-card { border-left: 2px solid #46a758; }
 
 /* ── Lean Hormuz layout ── */
 .lean-layout { --left-sidebar-width: 240px; --right-sidebar-width: 300px; grid-template-columns: var(--left-sidebar-width) minmax(560px, 1fr) var(--right-sidebar-width); grid-template-rows: 52px minmax(0, 1fr); transition: grid-template-columns .16s ease; }
