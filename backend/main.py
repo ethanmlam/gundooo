@@ -22,7 +22,7 @@ import history
 import timeline
 import allocator
 
-app = FastAPI(title="ARGUS Maritime Intelligence")
+app = FastAPI(title="Gundo")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

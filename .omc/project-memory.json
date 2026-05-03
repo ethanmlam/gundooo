@@ -141,8 +141,8 @@
   "hotPaths": [
     {
       "path": "backend/main.py",
-      "accessCount": 58,
-      "lastAccessed": 1777789204276,
+      "accessCount": 60,
+      "lastAccessed": 1777835838744,
       "type": "file"
     },
     {
@@ -159,8 +159,8 @@
     },
     {
       "path": "backend/engine.py",
-      "accessCount": 27,
-      "lastAccessed": 1777789058048,
+      "accessCount": 28,
+      "lastAccessed": 1777830007377,
       "type": "file"
     },
     {
@@ -242,6 +242,12 @@
       "type": "file"
     },
     {
+      "path": "README.md",
+      "accessCount": 5,
+      "lastAccessed": 1777835829143,
+      "type": "file"
+    },
+    {
       "path": "src/routes/TheaterSelect.tsx",
       "accessCount": 4,
       "lastAccessed": 1777786647597,
@@ -260,15 +266,15 @@
       "type": "file"
     },
     {
-      "path": "index.html",
-      "accessCount": 2,
-      "lastAccessed": 1777774489172,
+      "path": "package.json",
+      "accessCount": 3,
+      "lastAccessed": 1777835280392,
       "type": "file"
     },
     {
-      "path": "package.json",
+      "path": "index.html",
       "accessCount": 2,
-      "lastAccessed": 1777786638336,
+      "lastAccessed": 1777774489172,
       "type": "file"
     },
     {
@@ -374,6 +380,12 @@
       "type": "file"
     },
     {
+      "path": "backend/allocator.py",
+      "accessCount": 2,
+      "lastAccessed": 1777832628294,
+      "type": "file"
+    },
+    {
       "path": "scripts/aishub_collect.py",
       "accessCount": 1,
       "lastAccessed": 1777768196211,
@@ -383,12 +395,6 @@
       "path": "scripts/aisstream_hormuz.py",
       "accessCount": 1,
       "lastAccessed": 1777768197002,
-      "type": "file"
-    },
-    {
-      "path": "README.md",
-      "accessCount": 1,
-      "lastAccessed": 1777786639516,
       "type": "file"
     },
     {
@@ -410,15 +416,15 @@
       "type": "file"
     },
     {
-      "path": "backend/allocator.py",
-      "accessCount": 1,
-      "lastAccessed": 1777789188871,
-      "type": "file"
-    },
-    {
       "path": "backend/test_allocator.py",
       "accessCount": 1,
       "lastAccessed": 1777789307171,
+      "type": "file"
+    },
+    {
+      "path": "backend/requirements.txt",
+      "accessCount": 1,
+      "lastAccessed": 1777835830030,
       "type": "file"
     }
   ],
