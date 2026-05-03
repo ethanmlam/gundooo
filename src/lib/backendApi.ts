@@ -48,9 +48,65 @@ export type SearchLoopData = {
   recommended_sensor: { sensor_id: string; [key: string]: unknown };
 };
 
+export type TriageEntry = {
+  mmsi: number;
+  vessel_name: string;
+  vessel_type: string;
+  threat_score: number;
+  intent: string;
+  intent_confidence?: number;
+  dark_duration_hours: number;
+  reasoning: string;
+  fused_threat_belief?: number | null;
+  fusion_recommendation?: string | null;
+  source_breakdown?: unknown;
+};
+
+export type Allocation = {
+  priority: number;
+  mmsi: number;
+  vessel_name: string;
+  threat_score: number;
+  assigned_sensor: string;
+  expected_entropy_reduction: number;
+  expected_area_reduction_pct: number;
+  weather_impact: string;
+  rationale: string;
+};
+
+export type AllocationResult = {
+  allocations: Allocation[];
+  unassigned_vessels: Array<{ mmsi: number; vessel_name?: string; threat_score?: number; note?: string }>;
+  sensors_remaining: Array<{ sensor_id: string; passes_remaining: number }>;
+  total_expected_information_gain: number;
+  optimization_method: string;
+};
+
+export type FusionSource = {
+  type: string;
+  status: string;
+  confidence: number;
+  detail: string;
+  timestamp: string;
+};
+
+export type FusionResult = {
+  mmsi: number;
+  vessel_name: string;
+  sources: FusionSource[];
+  fused_threat_belief: number;
+  fused_safe_belief: number;
+  fused_uncertainty: number;
+  fusion_method: string;
+  recommendation: string;
+  next_overpass_utc?: string | null;
+  weather_impact?: string | null;
+};
+
 export type BackendState = {
   vessels: ApiVessel[];
   darkEvents: DarkEvent[];
+  triage: TriageEntry[];
   selectedMmsi: number;
   isBackendOnline: boolean;
   isLoading: boolean;
@@ -108,6 +164,13 @@ export function useBackendData(selectedMmsi = DEFAULT_MMSI): BackendState {
     retry: 1,
   });
 
+  const triageQuery = useQuery({
+    queryKey: ['backend', 'triage'],
+    queryFn: () => apiFetch<{ triage: TriageEntry[]; count: number }>('/triage'),
+    refetchInterval: 8000,
+    retry: 1,
+  });
+
   const predictMutation = useMutation({
     mutationFn: () => apiFetch<ParticleCloud>('/predict', {
       method: 'POST',
@@ -122,15 +185,17 @@ export function useBackendData(selectedMmsi = DEFAULT_MMSI): BackendState {
 
   const vessels = vesselsQuery.data?.vessels ?? [];
   const darkEvents = darkEventsQuery.data?.dark_events ?? [];
-  const errors = [vesselsQuery.error, darkEventsQuery.error]
+  const triage = triageQuery.data?.triage ?? [];
+  const errors = [vesselsQuery.error, darkEventsQuery.error, triageQuery.error]
     .filter(Boolean)
     .map((error) => error instanceof Error ? error.message : String(error));
-  const isBackendOnline = vesselsQuery.isSuccess || darkEventsQuery.isSuccess;
-  const isLoading = vesselsQuery.isLoading || darkEventsQuery.isLoading;
+  const isBackendOnline = vesselsQuery.isSuccess || darkEventsQuery.isSuccess || triageQuery.isSuccess;
+  const isLoading = vesselsQuery.isLoading || darkEventsQuery.isLoading || triageQuery.isLoading;
 
   return {
     vessels,
     darkEvents,
+    triage,
     selectedMmsi,
     isBackendOnline,
     isLoading,
@@ -152,6 +217,27 @@ export function useSearchLoop(mmsi: number | null, enabled = false) {
   const query = useQuery({
     queryKey: ['search-loop', mmsi],
     queryFn: () => apiFetch<SearchLoopData>(`/search-loop/${mmsi}`),
+    enabled: mmsi != null && enabled,
+    refetchInterval: 30000,
+    retry: 1,
+  });
+  return query.data ?? null;
+}
+
+export function useAllocation() {
+  const query = useQuery({
+    queryKey: ['allocator', 'default'],
+    queryFn: () => apiFetch<AllocationResult>('/allocate/default'),
+    refetchInterval: 15000,
+    retry: 1,
+  });
+  return query.data ?? null;
+}
+
+export function useFusion(mmsi: number | null, enabled = true) {
+  const query = useQuery({
+    queryKey: ['fusion', mmsi],
+    queryFn: () => apiFetch<FusionResult>(`/fusion/${mmsi}`),
     enabled: mmsi != null && enabled,
     refetchInterval: 30000,
     retry: 1,

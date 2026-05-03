@@ -183,6 +183,18 @@ h1, h2, h3 { margin: 0; letter-spacing: -.02em; }
 .anomaly-row span { color: var(--text-secondary); font-size: 10px; font-family: 'IBM Plex Mono', monospace; }
 .anomaly-row em { color: var(--accent); font-size: 10px; font-style: normal; font-weight: 700; font-family: 'IBM Plex Mono', monospace; }
 .action-stack { display: grid; gap: 6px; padding: 10px 12px; }
+.allocator-card { border-left: 2px solid var(--success); }
+.allocator-list { display: grid; gap: 0; max-height: 220px; overflow: auto; margin-top: 6px; }
+.allocator-row { padding: 7px 0; border-bottom: 1px solid var(--border-subtle); display: grid; gap: 2px; }
+.allocator-row b { color: var(--text-primary); font-size: 11px; font-family: 'IBM Plex Mono', monospace; }
+.allocator-row span, .allocator-row em { color: var(--text-secondary); font-size: 10px; font-style: normal; font-family: 'IBM Plex Mono', monospace; }
+.allocator-row em { color: var(--accent); font-weight: 700; }
+.allocator-row p, .allocator-foot { font-size: 10px; line-height: 1.35; }
+.fusion-panel { border-top: 1px solid var(--border-subtle); }
+.fusion-source, .fusion-summary { padding: 7px 12px; border-bottom: 1px solid var(--border-subtle); display: grid; gap: 2px; }
+.fusion-source b, .fusion-summary b { color: var(--text-primary); font-size: 11px; text-transform: capitalize; }
+.fusion-source span, .fusion-summary span { color: var(--accent); font-size: 10px; font-family: 'IBM Plex Mono', monospace; }
+.fusion-source p, .fusion-summary p { font-size: 10px; line-height: 1.35; }
 
 /* ── Source list ── */
 .source-list { display: grid; gap: 0; }
@@ -208,7 +220,7 @@ h1, h2, h3 { margin: 0; letter-spacing: -.02em; }
 .lean-layout .c2-map { grid-column: 2; grid-row: 2; }
 .lean-layout .c2-right { grid-column: 3; grid-row: 2; }
 .lean-layout .c2-workbench, .lean-layout .c2-charts, .lean-layout .c2-alert-strip, .lean-layout .timeline { display: none; }
-.lean-sidebar { gap: 0; align-content: start; overflow: hidden; }
+.lean-sidebar { gap: 0; align-content: start; overflow: auto; }
 .essential-card { min-height: 0; overflow: hidden; }
 .lean-layout .ship-roster { max-height: calc(100vh - 430px); }
 .lean-layout .identity-card { grid-template-columns: 1fr; }

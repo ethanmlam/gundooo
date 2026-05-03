@@ -14,7 +14,7 @@ import { theaters } from '../data/theaters';
 import { missionScenario, scenariosByTheater, type MissionScenario } from '../data/scenario';
 import { getRecommendedSandboxSensor, hormuzSensorSandbox, type HormuzSensorSandbox } from '../data/sensorSandbox';
 import { useAppStore } from '../lib/store';
-import { useBackendData, useSearchLoop, type BackendState, type SearchLoopData } from '../lib/backendApi';
+import { useAllocation, useBackendData, useFusion, useSearchLoop, type AllocationResult, type BackendState, type FusionResult, type SearchLoopData } from '../lib/backendApi';
 import { useLiveAis, type LiveAisSnapshot, type LiveAisVessel } from '../lib/useLiveAis';
 
 type SidebarProps = {
@@ -62,6 +62,45 @@ function SourceProvenanceCard({ sandbox }: { sandbox: HormuzSensorSandbox }) {
         <em>{source.status}</em>
       </div>)}
     </div>
+  </section>;
+}
+
+function ThreatQueueCard({ backend }: { backend: BackendState }) {
+  const setSelectedMmsi = useAppStore((s) => s.setSelectedMmsi);
+  const rows = backend.triage.slice(0, 6);
+  return <section className="stripe-card anomaly-card essential-card">
+    <div className="stripe-card-head compact">
+      <div className="icon-tile danger"><Target05Icon width={17} height={17}/></div>
+      <div><span>Threat queue</span><h3>{rows.length ? 'Fused dark-track ranking' : 'Waiting for triage'}</h3></div>
+    </div>
+    <div className="anomaly-list">
+      {rows.map((item) => <button key={`${item.mmsi}-${item.dark_duration_hours}`} onClick={() => setSelectedMmsi(item.mmsi)} className={`anomaly-row ${item.mmsi === backend.selectedMmsi ? 'selected' : ''}`}>
+        <b>{item.vessel_name}</b>
+        <span>MMSI {item.mmsi} · {item.intent.replace('_', ' ')} · dark {formatDuration(item.dark_duration_hours)}</span>
+        <em>Threat {item.threat_score}{item.fused_threat_belief != null ? ` · DS ${(item.fused_threat_belief * 100).toFixed(0)}%` : ''}</em>
+      </button>)}
+      {!rows.length && <p style={{ padding: '0 12px 8px' }}>Backend online, waiting for ranked dark events.</p>}
+    </div>
+  </section>;
+}
+
+function AllocatorCard({ allocation }: { allocation: AllocationResult | null }) {
+  const rows = allocation?.allocations ?? [];
+  return <section className="stripe-card compact-card allocator-card">
+    <div className="stripe-card-head compact">
+      <div className="icon-tile green"><Signal03Icon width={17} height={17}/></div>
+      <div><span>Sensor allocator</span><h3>{rows.length ? `${rows.length} resource-constrained taskings` : 'Optimizing taskings'}</h3></div>
+    </div>
+    <div className="allocator-list">
+      {rows.map((row) => <div className="allocator-row" key={`${row.priority}-${row.mmsi}-${row.assigned_sensor}`}>
+        <b>#{row.priority} {row.assigned_sensor}</b>
+        <span>{row.vessel_name} · threat {row.threat_score}</span>
+        <em>{row.expected_area_reduction_pct.toFixed(0)}% area reduction · IG {row.expected_entropy_reduction.toFixed(2)}</em>
+        <p>{row.rationale}</p>
+      </div>)}
+      {!rows.length && <p>Waiting for /allocate/default.</p>}
+    </div>
+    {allocation && <p className="mono allocator-foot">{allocation.optimization_method} · total gain {allocation.total_expected_information_gain.toFixed(2)} · remaining {allocation.sensors_remaining.map((s) => `${s.sensor_id}:${s.passes_remaining}`).join(', ') || 'none'}</p>}
   </section>;
 }
 
@@ -178,24 +217,26 @@ function profileFromLive(vessel: LiveAisVessel | undefined, selectedMmsi: number
   };
 }
 
-function VesselProfile({ backend, snapshot }: { backend: BackendState; snapshot: LiveAisSnapshot }) {
+function VesselProfile({ backend, snapshot, fusion }: { backend: BackendState; snapshot: LiveAisSnapshot; fusion: FusionResult | null }) {
   const selectedVessel = backend.vessels.find((v) => v.mmsi === backend.selectedMmsi);
   const selectedEvent = backend.darkEvents.find((event) => event.mmsi === backend.selectedMmsi);
+  const selectedTriage = backend.triage.find((event) => event.mmsi === backend.selectedMmsi);
   const liveProfile = profileFromLive(snapshot.vessels.find((v) => Number(v.mmsi) === backend.selectedMmsi), backend.selectedMmsi);
-  const title = liveProfile?.title || selectedVessel?.vessel_name || selectedEvent?.vessel_name || `MMSI ${backend.selectedMmsi}`;
+  const title = liveProfile?.title || selectedVessel?.vessel_name || selectedEvent?.vessel_name || selectedTriage?.vessel_name || fusion?.vessel_name || `MMSI ${backend.selectedMmsi}`;
+  const threatScore = liveProfile?.risk ?? selectedTriage?.threat_score ?? (selectedEvent ? 82 : Math.round((fusion?.fused_threat_belief ?? 0.48) * 100));
   const evidence = liveProfile?.evidence ?? [
-    selectedEvent ? `Dark for ${formatDuration(selectedEvent.duration_hours)}` : 'Scenario vessel selected',
-    `Movement: ${selectedVessel?.last_position.speed_knots?.toFixed?.(1) ?? selectedEvent?.last_known_speed?.toFixed?.(1) ?? '13.2'} kn`,
-    'Deviation from nearest shipping lane analyzed',
-    'Flag state risk: non-US registry flagged',
+    selectedEvent ? `Dark for ${formatDuration(selectedEvent.duration_hours)}` : selectedTriage ? `Dark for ${formatDuration(selectedTriage.dark_duration_hours)}` : 'Scenario vessel selected',
+    selectedTriage ? `Intent: ${selectedTriage.intent.replace('_', ' ')} (${selectedTriage.intent_confidence?.toFixed?.(2) ?? 'n/a'} confidence)` : `Movement: ${selectedVessel?.last_position.speed_knots?.toFixed?.(1) ?? selectedEvent?.last_known_speed?.toFixed?.(1) ?? '13.2'} kn`,
+    fusion ? `${fusion.fusion_method}: ${(fusion.fused_threat_belief * 100).toFixed(0)}% threat belief, ${(fusion.fused_uncertainty * 100).toFixed(0)}% uncertainty` : selectedTriage?.reasoning ?? 'Deviation from nearest shipping lane analyzed',
+    fusion?.recommendation ? `Recommendation: ${fusion.recommendation}` : 'Flag state risk and sensor availability considered',
   ];
 
   return <aside className="c2-right panel vessel-profile-panel">
-    <div className="profile-score"><span>Threat score</span><b>{liveProfile?.risk ?? (selectedEvent ? 82 : 48)}</b><em>{liveProfile?.status ?? 'classified by ML model'}</em></div>
+    <div className="profile-score"><span>Threat score</span><b>{threatScore}</b><em>{liveProfile?.status ?? fusion?.recommendation ?? selectedTriage?.intent?.replace('_', ' ') ?? 'classified by model'}</em></div>
     <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border-subtle)' }}>
       <span className="section-label">Vessel</span>
       <h2 style={{ padding: 0, fontSize: 16, fontWeight: 600 }}>{title}</h2>
-      <p style={{ padding: 0, marginTop: 4 }}>{liveProfile?.subtitle || selectedVessel?.vessel_type || selectedEvent?.vessel_type || 'Click any ship to inspect it.'}</p>
+      <p style={{ padding: 0, marginTop: 4 }}>{liveProfile?.subtitle || selectedVessel?.vessel_type || selectedEvent?.vessel_type || selectedTriage?.vessel_type || 'Click any ship to inspect it.'}</p>
     </div>
     <div className="evidence-panel minimal-evidence">
       <div className="panel-title" style={{ padding: '10px 12px 6px' }}>Why this matters</div>
@@ -206,6 +247,13 @@ function VesselProfile({ backend, snapshot }: { backend: BackendState; snapshot:
       <div><span>Last seen</span><b>{liveProfile?.location || (selectedVessel ? `${selectedVessel.last_position.lat.toFixed(3)}, ${selectedVessel.last_position.lon.toFixed(3)}` : selectedEvent ? `${selectedEvent.last_known_lat.toFixed(3)}, ${selectedEvent.last_known_lon.toFixed(3)}` : 'scenario track')}</b></div>
       <div><span>Movement</span><b>{liveProfile?.movement || `${selectedVessel?.last_position.speed_knots?.toFixed?.(1) ?? selectedEvent?.last_known_speed?.toFixed?.(1) ?? '13.2'} kn`}</b></div>
     </div>
+    {fusion && <div className="fusion-panel">
+      <div className="panel-title" style={{ padding: '10px 12px 6px' }}>Multi-INT evidence</div>
+      {fusion.sources.map((source) => <div className="fusion-source" key={`${source.type}-${source.timestamp}`}>
+        <b>{source.type.replaceAll('_', ' ')}</b><span>{source.status} · conf {source.confidence}</span><p>{source.detail}</p>
+      </div>)}
+      <div className="fusion-summary"><b>Next overpass</b><span>{fusion.next_overpass_utc ? new Date(fusion.next_overpass_utc).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'none'}</span><p>{fusion.weather_impact}</p></div>
+    </div>}
   </aside>;
 }
 
@@ -217,7 +265,9 @@ export default function Mission() {
   const selectedMmsi = useAppStore((s) => s.selectedMmsi);
   const setSelectedMmsi = useAppStore((s) => s.setSelectedMmsi);
   const backend = useBackendData(selectedMmsi);
-  const displayBackend = isHormuz ? { ...backend, vessels: [], darkEvents: [], isBackendOnline: false, isLoading: false, statusText: 'Hormuz exercise sandbox' } : backend;
+  const allocation = useAllocation();
+  const fusion = useFusion(!isHormuz ? selectedMmsi : null, !isHormuz && backend.isBackendOnline);
+  const displayBackend = isHormuz ? { ...backend, vessels: [], darkEvents: [], triage: [], isBackendOnline: false, isLoading: false, statusText: 'Hormuz exercise sandbox' } : backend;
   const hasPrediction = backend.prediction != null && backend.predictedMmsi === backend.selectedMmsi;
   const searchLoop = useSearchLoop(hasPrediction ? backend.selectedMmsi : null, backend.searchLoopEnabled);
   const [showAfterPolygon, setShowAfterPolygon] = useState(false);
@@ -229,7 +279,7 @@ export default function Mission() {
   const displaySnapshot = isHormuz ? { ...snapshot, vessels: [] } : snapshot;
   const isInitialLoad = !isHormuz && backend.isLoading && !backend.isBackendOnline;
   const trackedCount = displayBackend.vessels.length || scenario.vesselTracks.length;
-  const flaggedCount = displayBackend.darkEvents.length || 2;
+  const flaggedCount = displayBackend.darkEvents.length || displayBackend.triage.length || 2;
 
   return <main className="mission-page c2-layout lean-layout">
     <header className="mission-topbar panel">
@@ -249,15 +299,19 @@ export default function Mission() {
         </div>
       : <>
         <aside className="c2-left panel production-sidebar lean-sidebar">
-          <StraitSummary theater={theater} scenario={scenario} backend={displayBackend} />
-          {isHormuz && <SourceProvenanceCard sandbox={hormuzSensorSandbox} />}
-          <ShipRosterCard snapshot={displaySnapshot} backend={displayBackend} scenario={scenario} />
           {isHormuz
             ? <>
+                <StraitSummary theater={theater} scenario={scenario} backend={displayBackend} />
+                <SourceProvenanceCard sandbox={hormuzSensorSandbox} />
+                <ShipRosterCard snapshot={displaySnapshot} backend={displayBackend} scenario={scenario} />
                 <SensorSandboxCard sandbox={hormuzSensorSandbox} applied={sandboxApplied} onApply={() => setSandboxApplied(true)} onReset={() => setSandboxApplied(false)} />
                 <WeatherCard sandbox={hormuzSensorSandbox} />
               </>
-            : <NextStepCard backend={backend} searchLoop={searchLoop} showAfterPolygon={showAfterPolygon} onSimulate={() => setShowAfterPolygon(true)} />}
+            : <>
+                <ThreatQueueCard backend={backend} />
+                <AllocatorCard allocation={allocation} />
+                <NextStepCard backend={backend} searchLoop={searchLoop} showAfterPolygon={showAfterPolygon} onSimulate={() => setShowAfterPolygon(true)} />
+              </>} 
         </aside>
 
         <section className="c2-map panel">
@@ -273,7 +327,7 @@ export default function Mission() {
           />
         </section>
 
-        <VesselProfile backend={backend} snapshot={snapshot} />
+        <VesselProfile backend={backend} snapshot={snapshot} fusion={fusion} />
       </>}
   </main>;
 }
