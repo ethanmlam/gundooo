@@ -5,7 +5,7 @@ import { IconLayer, PathLayer, PolygonLayer, ScatterplotLayer, TextLayer } from 
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { missionScenario, type MissionScenario } from '../../data/scenario';
 import { useLiveAis } from '../../lib/useLiveAis';
-import type { BackendState, ApiVessel, DarkEvent, ParticleCloud, Recommendation, SensorTasking } from '../../lib/backendApi';
+import type { BackendState, ApiVessel, DarkEvent, ParticleCloud } from '../../lib/backendApi';
 
 const BASEMAPS = {
   dark: {
@@ -70,20 +70,8 @@ function particleData(prediction: ParticleCloud | null) {
   }));
 }
 
-function regionPolygon(recommendation: Recommendation | null) {
-  const geometry = recommendation?.prediction_region?.geometry;
-  if (!geometry) return [];
-  if (geometry.type === 'Polygon') return [{ polygon: geometry.coordinates[0] }];
-  if (geometry.type === 'MultiPolygon') return geometry.coordinates.map((poly: number[][][]) => ({ polygon: poly[0] }));
-  return [];
-}
-
 function darkEventPosition(event: DarkEvent) {
   return [event.last_known_lon, event.last_known_lat];
-}
-
-function taskingPosition(tasking: SensorTasking) {
-  return [tasking.center_lon, tasking.center_lat];
 }
 
 function vesselCategory(type?: string) {
@@ -155,9 +143,7 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi 
   const liveVessels = isFresh ? snapshot.vessels : [];
   const backendVessels = backend?.vessels ?? [];
   const darkEvents = backend?.darkEvents ?? [];
-  const particles = particleData(backend?.prediction ?? null);
-  const taskings = backend?.recommendation?.taskings ?? [];
-  const predictionRegions = regionPolygon(backend?.recommendation ?? null);
+  const particles = particleData(backend?.predictedMmsi === backend?.selectedMmsi ? backend?.prediction ?? null : null);
 
   const layers = [
     new PolygonLayer({
@@ -168,15 +154,6 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi 
       getLineColor: [56, 189, 248, 115],
       getLineWidth: 1,
       lineWidthMinPixels: 1,
-    }),
-    new PolygonLayer({
-      id: 'prediction-region',
-      data: predictionRegions,
-      getPolygon: (d: any) => d.polygon,
-      getFillColor: [56, 189, 248, 28],
-      getLineColor: [125, 211, 252, 210],
-      getLineWidth: 2,
-      lineWidthMinPixels: 2,
     }),
     new PolygonLayer({
       id: 'radar-cone',
@@ -267,18 +244,6 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi 
       onClick: ({ object }: any) => object?.mmsi && onSelectMmsi?.(object.mmsi),
     }),
     new ScatterplotLayer({
-      id: 'sensor-taskings',
-      data: taskings,
-      getPosition: taskingPosition,
-      getRadius: (d: SensorTasking) => 900 + d.expected_entropy_reduction * 900,
-      radiusMinPixels: 7,
-      radiusMaxPixels: 18,
-      getFillColor: [52, 211, 153, 210],
-      getLineColor: [236, 253, 245, 230],
-      lineWidthMinPixels: 2,
-      stroked: true,
-    }),
-    new ScatterplotLayer({
       id: 'scenario-track-heads',
       data: backend?.isBackendOnline ? [] : scenario.vesselTracks.map((track) => ({ ...track, position: track.path[track.path.length - 1] })),
       getPosition: (d: any) => d.position,
@@ -318,7 +283,6 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi 
       data: [
         ...backendVessels.filter((v) => v.mmsi === backend?.selectedMmsi).map((v) => ({ text: `${v.vessel_name || v.mmsi}`, position: vesselPosition(v) })),
         ...darkEvents.filter((e) => e.mmsi === backend?.selectedMmsi).map((e) => ({ text: e.vessel_name || `${e.mmsi}`, position: darkEventPosition(e) })),
-        ...taskings.slice(0, 4).map((t) => ({ text: t.sensor_id, position: taskingPosition(t) })),
       ],
       getPosition: (d: any) => d.position,
       getText: (d: any) => d.text,

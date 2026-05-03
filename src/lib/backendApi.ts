@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
 
 export type ApiVessel = {
   mmsi: number;
@@ -40,32 +41,18 @@ export type ParticleCloud = {
   };
 };
 
-export type SensorTasking = {
-  sensor_id: string;
-  expected_entropy_reduction: number;
-  center_lat: number;
-  center_lon: number;
-};
-
-export type Recommendation = {
-  mmsi: number;
-  taskings: SensorTasking[];
-  prediction_region?: any;
-};
-
 export type BackendState = {
   vessels: ApiVessel[];
   darkEvents: DarkEvent[];
-  recommendation: Recommendation | null;
   selectedMmsi: number;
   isBackendOnline: boolean;
   statusText: string;
   errors: string[];
   predict: () => void;
-  updateWithSar: () => void;
+  clearPrediction: () => void;
   prediction: ParticleCloud | null;
+  predictedMmsi: number | null;
   isPredicting: boolean;
-  isUpdating: boolean;
 };
 
 export const DEFAULT_MMSI = 309253000;
@@ -88,7 +75,14 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export function useBackendData(selectedMmsi = DEFAULT_MMSI): BackendState {
-  const queryClient = useQueryClient();
+  const [prediction, setPrediction] = useState<ParticleCloud | null>(null);
+  const [predictedMmsi, setPredictedMmsi] = useState<number | null>(null);
+
+  useEffect(() => {
+    setPrediction(null);
+    setPredictedMmsi(null);
+  }, [selectedMmsi]);
+
   const vesselsQuery = useQuery({
     queryKey: ['backend', 'vessels'],
     queryFn: () => apiFetch<{ vessels: ApiVessel[]; count: number }>('/vessels'),
@@ -103,61 +97,39 @@ export function useBackendData(selectedMmsi = DEFAULT_MMSI): BackendState {
     retry: 1,
   });
 
-  const recommendationQuery = useQuery({
-    queryKey: ['backend', 'recommend', selectedMmsi],
-    queryFn: () => apiFetch<Recommendation>(`/recommend/${selectedMmsi}`),
-    enabled: Boolean(selectedMmsi),
-    refetchInterval: 12000,
-    retry: 1,
-  });
-
   const predictMutation = useMutation({
     mutationFn: () => apiFetch<ParticleCloud>('/predict', {
       method: 'POST',
       body: JSON.stringify({ mmsi: selectedMmsi, dt_hours: 2.5, n_particles: 1000 }),
     }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['backend', 'recommend', selectedMmsi] }),
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: () => {
-      const topTasking = recommendationQuery.data?.taskings?.[0];
-      const fallbackEvent = darkEventsQuery.data?.dark_events?.find((event) => event.mmsi === selectedMmsi);
-      return apiFetch<ParticleCloud>('/update', {
-        method: 'POST',
-        body: JSON.stringify({
-          mmsi: selectedMmsi,
-          observation_lat: topTasking?.center_lat ?? (fallbackEvent ? fallbackEvent.last_known_lat - 0.35 : 33.2),
-          observation_lon: topTasking?.center_lon ?? (fallbackEvent ? fallbackEvent.last_known_lon - 0.45 : -119.0),
-          sensor_type: topTasking?.sensor_id ?? 'SAR',
-          confidence: 0.92,
-        }),
-      });
+    onSuccess: (data) => {
+      setPrediction(data);
+      setPredictedMmsi(selectedMmsi);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['backend', 'recommend', selectedMmsi] }),
   });
 
   const vessels = vesselsQuery.data?.vessels ?? [];
   const darkEvents = darkEventsQuery.data?.dark_events ?? [];
-  const errors = [vesselsQuery.error, darkEventsQuery.error, recommendationQuery.error]
+  const errors = [vesselsQuery.error, darkEventsQuery.error]
     .filter(Boolean)
     .map((error) => error instanceof Error ? error.message : String(error));
-  const isBackendOnline = vesselsQuery.isSuccess || darkEventsQuery.isSuccess || recommendationQuery.isSuccess;
-  const isLoading = vesselsQuery.isLoading || darkEventsQuery.isLoading || recommendationQuery.isLoading;
-  const prediction = updateMutation.data ?? predictMutation.data ?? null;
+  const isBackendOnline = vesselsQuery.isSuccess || darkEventsQuery.isSuccess;
+  const isLoading = vesselsQuery.isLoading || darkEventsQuery.isLoading;
 
   return {
     vessels,
     darkEvents,
-    recommendation: recommendationQuery.data ?? null,
     selectedMmsi,
     isBackendOnline,
     statusText: isBackendOnline ? 'Backend online' : isLoading ? 'Connecting to backend' : 'Backend offline, using demo scenario',
     errors,
     predict: () => predictMutation.mutate(),
-    updateWithSar: () => updateMutation.mutate(),
+    clearPrediction: () => {
+      setPrediction(null);
+      setPredictedMmsi(null);
+    },
     prediction,
+    predictedMmsi,
     isPredicting: predictMutation.isPending,
-    isUpdating: updateMutation.isPending,
   };
 }

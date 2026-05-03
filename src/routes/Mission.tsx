@@ -93,12 +93,16 @@ function ShipRosterCard({ snapshot, backend, scenario }: { snapshot: LiveAisSnap
 }
 
 function NextStepCard({ backend }: { backend: BackendState }) {
+  const hasPrediction = backend.prediction && backend.predictedMmsi === backend.selectedMmsi;
   return <section className="stripe-card compact-card">
     <div className="stripe-card-head compact">
       <div className="icon-tile green"><ZapFastIcon width={17} height={17}/></div>
-      <div><span>Next step</span><h3>{backend.prediction ? 'Review predicted corridor' : 'Profile selected vessel'}</h3></div>
+      <div><span>Prediction</span><h3>{hasPrediction ? 'Projected path active' : 'Project selected vessel'}</h3></div>
     </div>
-    <p>{backend.prediction ? 'Prediction is visible on the map.' : 'Open registry, ownership, destination, sanctions, and behavior history.'}</p>
+    <p>{hasPrediction ? 'Cloud is based on this selected boat. Click another boat to clear it.' : 'Run inference for the currently selected boat. The old cloud clears when selection changes.'}</p>
+    <button className="primary-action" onClick={backend.predict} disabled={backend.isPredicting}>
+      <ZapFastIcon width={15} height={15}/> {backend.isPredicting ? 'Projecting...' : 'Run prediction'}
+    </button>
   </section>;
 }
 
