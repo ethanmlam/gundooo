@@ -1,8 +1,49 @@
 from __future__ import annotations
 
+import math
+
 import numpy as np
 from typing import TypedDict
 from numpy.typing import NDArray
+from shapely.geometry import Point, Polygon
+
+NAVIGABLE_WATER = Polygon([
+    (-120.5, 32.0), (-117.0, 32.0), (-117.0, 33.75),
+    (-117.8, 33.75), (-118.2, 33.85), (-118.55, 33.83),
+    (-120.5, 34.5),
+])
+
+EARTH_RADIUS_NM = 3440.065
+
+SHIPPING_LANES = [
+    ((33.72, -118.27), (21.31, -157.86)),
+    ((33.72, -118.27), (34.50, 140.00)),
+]
+
+
+def _cross_track_distance_nm(
+    route_start: tuple[float, float],
+    route_end: tuple[float, float],
+    lat: float,
+    lon: float,
+) -> float:
+    lat_a, lon_a = map(math.radians, route_start)
+    lat_b, lon_b = map(math.radians, route_end)
+    lat_p, lon_p = math.radians(lat), math.radians(lon)
+    d_ap = 2 * math.asin(math.sqrt(
+        math.sin((lat_p - lat_a) / 2) ** 2
+        + math.cos(lat_a) * math.cos(lat_p) * math.sin((lon_p - lon_a) / 2) ** 2
+    ))
+    bearing_ap = math.atan2(
+        math.sin(lon_p - lon_a) * math.cos(lat_p),
+        math.cos(lat_a) * math.sin(lat_p) - math.sin(lat_a) * math.cos(lat_p) * math.cos(lon_p - lon_a),
+    )
+    bearing_ab = math.atan2(
+        math.sin(lon_b - lon_a) * math.cos(lat_b),
+        math.cos(lat_a) * math.sin(lat_b) - math.sin(lat_a) * math.cos(lat_b) * math.cos(lon_b - lon_a),
+    )
+    cross_track = math.asin(max(-1.0, min(1.0, math.sin(d_ap) * math.sin(bearing_ap - bearing_ab))))
+    return abs(cross_track) * EARTH_RADIUS_NM
 
 
 class ParticleCloud(TypedDict):
@@ -18,6 +59,8 @@ class SensorTasking(TypedDict):
     expected_entropy_reduction: float
     center_lat: float
     center_lon: float
+    revisit_hrs: int | None
+    res_m: int | None
 
 
 class Recommendation(TypedDict):
@@ -40,6 +83,13 @@ def _probably_water_socal(lat: NDArray, lon: NDArray) -> NDArray:
     san_pedro_bay = (lat <= 33.735) & (lon <= -118.36)
     open_pacific = (lat <= 33.66) | (lon <= -118.48)
     return offshore | san_pedro_bay | open_pacific
+
+SENSOR_CATALOG = [
+    {"sensor_id": "SAR-SPOTLIGHT", "radius": 0.015, "revisit_hrs": 6, "res_m": 1},
+    {"sensor_id": "SAR-STRIPMAP", "radius": 0.05, "revisit_hrs": 12, "res_m": 5},
+    {"sensor_id": "ELINT-PASS", "radius": 0.08, "revisit_hrs": 4, "res_m": None},
+    {"sensor_id": "OPIR-WIDE", "radius": 0.12, "revisit_hrs": 24, "res_m": 15},
+]
 
 
 def particle_propagate(
@@ -79,6 +129,30 @@ def particle_propagate(
     headings = headings_all[indices]
     speeds = speeds_all[indices]
     weights = np.ones(n_particles) / n_particles
+
+    # Ocean mask: zero-weight particles that land outside navigable water
+    for i in range(n_particles):
+        if not NAVIGABLE_WATER.contains(Point(lons[i], lats[i])):
+            weights[i] = 0.0
+
+    # Shipping lane bias: Gaussian falloff from nearest lane (sigma=10nm)
+    lane_sigma_sq = 10.0 ** 2
+    for i in range(n_particles):
+        if weights[i] == 0.0:
+            continue
+        min_dist = float("inf")
+        for start, end in SHIPPING_LANES:
+            d = _cross_track_distance_nm(start, end, float(lats[i]), float(lons[i]))
+            if d < min_dist:
+                min_dist = d
+        weights[i] *= math.exp(-min_dist ** 2 / (2 * lane_sigma_sq))
+
+    # Renormalize
+    total = weights.sum()
+    if total > 1e-300:
+        weights /= total
+    else:
+        weights = np.ones(n_particles) / n_particles
 
     return ParticleCloud(
         lats=lats.tolist(),
@@ -170,22 +244,9 @@ def recommend_sensor(
     if candidate_sensors is None:
         center_lat = float(np.average(lats, weights=weights))
         center_lon = float(np.average(lons, weights=weights))
-        lat_std = max(float(np.std(lats)), 0.015)
-        lon_std = max(float(np.std(lons)), 0.015)
-        # Spread looks across the reachable cloud instead of stacking every SAR
-        # candidate on the weighted mean. Offsets are in degrees, roughly
-        # 1 degree latitude = 60 nm.
-        offsets = [
-            (0.0, 0.0),
-            (0.75 * lat_std, 0.75 * lon_std),
-            (-0.75 * lat_std, -0.75 * lon_std),
-            (0.75 * lat_std, -0.75 * lon_std),
-            (-0.75 * lat_std, 0.75 * lon_std),
-        ]
-        radius = max(0.025, min(0.08, 0.65 * max(lat_std, lon_std)))
         candidate_sensors = [
-            {"sensor_id": f"SAR-{i}", "lat": center_lat + dlat, "lon": center_lon + dlon, "radius": radius}
-            for i, (dlat, dlon) in enumerate(offsets)
+            {**entry, "lat": center_lat, "lon": center_lon}
+            for entry in SENSOR_CATALOG
         ]
 
     current_entropy = _entropy(weights)
@@ -202,6 +263,8 @@ def recommend_sensor(
                 expected_entropy_reduction=0.0,
                 center_lat=s_lat,
                 center_lon=s_lon,
+                revisit_hrs=sensor.get("revisit_hrs"),
+                res_m=sensor.get("res_m"),
             ))
             continue
 
@@ -225,6 +288,8 @@ def recommend_sensor(
             expected_entropy_reduction=float(reduction),
             center_lat=s_lat,
             center_lon=s_lon,
+            revisit_hrs=sensor.get("revisit_hrs"),
+            res_m=sensor.get("res_m"),
         ))
 
     taskings.sort(key=lambda t: t["expected_entropy_reduction"], reverse=True)
@@ -249,7 +314,7 @@ if __name__ == "__main__":
     print(f"✓ bayesian_update: spread {spread_before:.4f} → {spread_after:.4f}")
 
     rec = recommend_sensor(updated)
-    assert len(rec["taskings"]) == 5
+    assert len(rec["taskings"]) == len(SENSOR_CATALOG)
     assert rec["prediction_region"]["geometry"]["type"] == "Polygon"
     print(f"✓ recommend_sensor: top={rec['taskings'][0]['sensor_id']} "
           f"ΔH={rec['taskings'][0]['expected_entropy_reduction']:.4f}")

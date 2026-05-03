@@ -9,9 +9,10 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from engine import particle_propagate, bayesian_update, recommend_sensor, ParticleCloud
+from engine import particle_propagate, bayesian_update, recommend_sensor, ParticleCloud, _conformal_region
 from intent import classify_intent
-from triage import triage_dark_events
+from triage import triage_dark_events, get_model_weights
+from correlation import find_correlations
 
 app = FastAPI(title="ARGUS Maritime Intelligence")
 app.add_middleware(
@@ -232,6 +233,14 @@ def get_triage():
     return {"triage": ranked, "count": len(ranked)}
 
 
+@app.get("/correlations")
+def get_correlations():
+    ranked = triage_dark_events(DARK_EVENTS, VESSELS, VESSEL_MAP)
+    threat_scores = {entry["mmsi"]: entry["threat_score"] for entry in ranked}
+    pairs = find_correlations(DARK_EVENTS, threat_scores=threat_scores)
+    return {"correlations": pairs, "count": len(pairs)}
+
+
 @app.get("/intent/{mmsi}")
 def get_intent(mmsi: int):
     vessel = VESSEL_MAP.get(mmsi)
@@ -246,6 +255,90 @@ def get_intent(mmsi: int):
         "vessel_type": vessel["vessel_type"],
         **result,
     }
+
+
+def _polygon_area_deg2(coords):
+    n = len(coords)
+    if n < 3:
+        return 0.0
+    area = 0.0
+    for i in range(n):
+        j = (i + 1) % n
+        area += coords[i][0] * coords[j][1]
+        area -= coords[j][0] * coords[i][1]
+    return abs(area) / 2.0
+
+
+@app.get("/search-loop/{mmsi}")
+def search_loop(mmsi: int):
+    vessel = VESSEL_MAP.get(mmsi)
+    if not vessel:
+        raise HTTPException(status_code=404, detail=f"MMSI {mmsi} not found")
+
+    # 1. Determine starting position — prefer dark event data
+    dark = next((d for d in DARK_EVENTS if d["mmsi"] == mmsi), None)
+    if dark and dark["last_known_lat"]:
+        lat = dark["last_known_lat"]
+        lon = dark["last_known_lon"]
+        heading = dark["last_known_heading"]
+        speed = dark["last_known_speed"]
+    elif vessel["last_position"]:
+        lat = vessel["last_position"]["lat"]
+        lon = vessel["last_position"]["lon"]
+        heading = vessel["last_position"]["heading"]
+        speed = vessel["last_position"]["speed_knots"]
+    else:
+        raise HTTPException(status_code=400, detail="No position data available")
+
+    # 2. Propagate particle cloud (local — does not touch PARTICLE_CLOUDS global)
+    cloud = particle_propagate(lat, lon, heading, speed, dt_hours=6.0, n_particles=1000)
+
+    # 3. Recommend best sensor tasking
+    rec = recommend_sensor(cloud)
+    top_sensor = rec["taskings"][0]
+
+    # 4. BEFORE conformal region (90%)
+    lats_arr = np.array(cloud["lats"])
+    lons_arr = np.array(cloud["lons"])
+    weights_arr = np.array(cloud["weights"])
+    before_polygon = _conformal_region(lats_arr, lons_arr, weights_arr, level=0.9)
+
+    # 5. Simulate observation at sensor center
+    obs_lat = top_sensor["center_lat"]
+    obs_lon = top_sensor["center_lon"]
+    updated_cloud = bayesian_update(cloud, obs_lat, obs_lon, obs_sigma=0.02)
+
+    # 6. AFTER conformal region
+    lats_upd = np.array(updated_cloud["lats"])
+    lons_upd = np.array(updated_cloud["lons"])
+    weights_upd = np.array(updated_cloud["weights"])
+    after_polygon = _conformal_region(lats_upd, lons_upd, weights_upd, level=0.9)
+
+    # 7. Area reduction using shoelace formula
+    before_coords = before_polygon["geometry"]["coordinates"][0]
+    after_coords = after_polygon["geometry"]["coordinates"][0]
+    before_area = _polygon_area_deg2(before_coords)
+    after_area = _polygon_area_deg2(after_coords)
+    if before_area > 0:
+        area_reduction_pct = float((before_area - after_area) / before_area * 100.0)
+    else:
+        area_reduction_pct = 0.0
+
+    return {
+        "mmsi": mmsi,
+        "before_polygon": before_polygon,
+        "after_polygon": after_polygon,
+        "area_reduction_pct": area_reduction_pct,
+        "recommended_sensor": dict(top_sensor),
+    }
+
+
+@app.get("/triage/weights")
+def get_triage_weights():
+    weights = get_model_weights()
+    if weights is None:
+        raise HTTPException(status_code=404, detail="Model not yet trained. Call /triage first.")
+    return weights
 
 
 if __name__ == "__main__":

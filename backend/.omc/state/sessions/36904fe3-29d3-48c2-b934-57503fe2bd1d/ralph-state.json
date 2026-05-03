@@ -1,0 +1,12 @@
+{
+  "active": true,
+  "iteration": 1,
+  "max_iterations": 100,
+  "started_at": "2026-05-03T01:09:39.631Z",
+  "prompt": "ralph: In backend/engine.py, replace the auto-generated candidate sensors (the SAR-{i} loop that creates sensors in a ring) with a static SENSOR_CATALOG:\n\nSENSOR_CATALOG = [\n    {\"sensor_id\": \"SAR-SPOTLIGHT\", \"radius\": 0.015, \"revisit_hrs\": 6, \"res_m\": 1},\n    {\"sensor_id\": \"SAR-STRIPMAP\", \"radius\": 0.05, \"revisit_hrs\": 12, \"res_m\": 5},\n    {\"sensor_id\": \"ELINT-PASS\", \"radius\": 0.08, \"revisit_hrs\": 4, \"res_m\": None},\n    {\"sensor_id\": \"OPIR-WIDE\", \"radius\": 0.12, \"revisit_hrs\": 24, \"res_m\": 15},\n]\n\nIn recommend_sensor, when candidate_sensors is None, instead of generating SAR-0 through SAR-N in a ring, place each catalog sensor centered on the particle cloud centroid. Keep the entropy reduction math the same. Include the extra metadata (revisit_hrs, res_m) in the response so the frontend can display it. Update the /search-loop endpoint too if it uses the default candidates. Test with: curl -s http://localhost:8000/recommend/309253000 | python3 -m json.tool — verify sensor_ids are SAR-SPOTLIGHT etc, not SAR-0.",
+  "session_id": "36904fe3-29d3-48c2-b934-57503fe2bd1d",
+  "project_path": "/Users/jacob/gundooo/backend",
+  "linked_ultrawork": true,
+  "awaiting_confirmation": true,
+  "last_checked_at": "2026-05-03T01:09:39.632Z"
+}

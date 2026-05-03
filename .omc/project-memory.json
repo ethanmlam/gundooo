@@ -141,26 +141,200 @@
   "hotPaths": [
     {
       "path": "backend/main.py",
-      "accessCount": 11,
-      "lastAccessed": 1777763981961,
-      "type": "file"
-    },
-    {
-      "path": "backend/engine.py",
-      "accessCount": 4,
-      "lastAccessed": 1777763659699,
-      "type": "file"
-    },
-    {
-      "path": "backend/intent.py",
-      "accessCount": 1,
-      "lastAccessed": 1777763781330,
+      "accessCount": 26,
+      "lastAccessed": 1777769478493,
       "type": "file"
     },
     {
       "path": "backend/triage.py",
+      "accessCount": 18,
+      "lastAccessed": 1777770128714,
+      "type": "file"
+    },
+    {
+      "path": "backend/engine.py",
+      "accessCount": 17,
+      "lastAccessed": 1777770881499,
+      "type": "file"
+    },
+    {
+      "path": "backend/correlation.py",
+      "accessCount": 4,
+      "lastAccessed": 1777769469190,
+      "type": "file"
+    },
+    {
+      "path": "backend/intent.py",
+      "accessCount": 4,
+      "lastAccessed": 1777770355362,
+      "type": "file"
+    },
+    {
+      "path": "scripts/aishub_collect.py",
       "accessCount": 1,
-      "lastAccessed": 1777763968013,
+      "lastAccessed": 1777768196211,
+      "type": "file"
+    },
+    {
+      "path": "scripts/aisstream_hormuz.py",
+      "accessCount": 1,
+      "lastAccessed": 1777768197002,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 1,
+      "lastAccessed": 1777768197548,
+      "type": "file"
+    },
+    {
+      "path": "vite.config.ts",
+      "accessCount": 1,
+      "lastAccessed": 1777768197604,
+      "type": "file"
+    },
+    {
+      "path": "src/main.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1777768198025,
+      "type": "file"
+    },
+    {
+      "path": "src/app/router.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1777768198267,
+      "type": "file"
+    },
+    {
+      "path": "src/routes/Landing.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1777768203009,
+      "type": "file"
+    },
+    {
+      "path": "src/routes/Mission.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1777768203585,
+      "type": "file"
+    },
+    {
+      "path": "src/routes/TheaterSelect.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1777768203648,
+      "type": "file"
+    },
+    {
+      "path": "src/components/globe/TheaterGlobe.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1777768204425,
+      "type": "file"
+    },
+    {
+      "path": "src/components/mission/TacticalMap.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1777768205092,
+      "type": "file"
+    },
+    {
+      "path": "src/components/mission/AlertPanel.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1777768205449,
+      "type": "file"
+    },
+    {
+      "path": "src/components/mission/QueryConsole.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1777768206001,
+      "type": "file"
+    },
+    {
+      "path": "src/components/mission/FeedStatus.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1777768206242,
+      "type": "file"
+    },
+    {
+      "path": "src/components/mission/TimelineScrubber.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1777768206869,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/store.ts",
+      "accessCount": 1,
+      "lastAccessed": 1777768213449,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/backendApi.ts",
+      "accessCount": 1,
+      "lastAccessed": 1777768213564,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/mockFeeds.ts",
+      "accessCount": 1,
+      "lastAccessed": 1777768215898,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/useLiveAis.ts",
+      "accessCount": 1,
+      "lastAccessed": 1777768216018,
+      "type": "file"
+    },
+    {
+      "path": "src/data/theaters.ts",
+      "accessCount": 1,
+      "lastAccessed": 1777768216096,
+      "type": "file"
+    },
+    {
+      "path": "src/data/scenario.ts",
+      "accessCount": 1,
+      "lastAccessed": 1777768216175,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/queryParser.ts",
+      "accessCount": 1,
+      "lastAccessed": 1777768216257,
+      "type": "file"
+    },
+    {
+      "path": "src/data/cities.ts",
+      "accessCount": 1,
+      "lastAccessed": 1777768216506,
+      "type": "file"
+    },
+    {
+      "path": "src/components/workbench/MarineWorkbench.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1777768221704,
+      "type": "file"
+    },
+    {
+      "path": "src/components/charts/ConfidenceChart.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1777768222585,
+      "type": "file"
+    },
+    {
+      "path": "src/components/charts/FeedVolumeChart.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1777768223016,
+      "type": "file"
+    },
+    {
+      "path": "index.html",
+      "accessCount": 1,
+      "lastAccessed": 1777768223797,
+      "type": "file"
+    },
+    {
+      "path": "src/styles.css",
+      "accessCount": 1,
+      "lastAccessed": 1777768223899,
       "type": "file"
     }
   ],
