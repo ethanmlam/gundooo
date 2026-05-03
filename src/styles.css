@@ -32,21 +32,6 @@ button { cursor: pointer; }
 p { margin: 0; color: var(--text-secondary); font-size: 11px; line-height: 1.4; }
 h1, h2, h3 { margin: 0; letter-spacing: -.02em; }
 
-/* ── Landing ── */
-.landing { min-height: 100vh; position: relative; overflow: hidden; background: var(--surface-0); }
-.landing-nav { position: relative; z-index: 2; height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; border-bottom: 1px solid var(--border-subtle); }
-.logo { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-secondary); }
-.logo svg { color: var(--text-secondary); }
-.hero { position: relative; z-index: 2; min-height: calc(100vh - 44px); display: flex; flex-direction: column; justify-content: center; padding: 0 7vw 7vh; max-width: 720px; }
-.eyebrow { color: var(--accent); text-transform: uppercase; font-size: 9px; letter-spacing: .12em; font-weight: 700; margin-bottom: 12px; font-family: 'IBM Plex Sans', sans-serif; }
-.hero h1 { font-size: 48px; line-height: .95; color: var(--text-primary); font-weight: 700; font-family: 'IBM Plex Sans', sans-serif; }
-.hero-copy { margin-top: 16px; max-width: 520px; color: var(--text-secondary); font-size: 14px; line-height: 1.5; }
-.hero-stats { margin-top: 16px; color: var(--text-secondary); font-size: 11px; letter-spacing: .06em; font-family: 'IBM Plex Mono', monospace; font-weight: 500; }
-.hero-actions { display: flex; align-items: center; gap: 12px; margin-top: 24px; }
-.hero-actions a { background: var(--accent); color: #06090f; font-weight: 600; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; border-radius: 2px; border: none; padding: 8px 16px; }
-.hero-actions a:hover { opacity: 0.9; }
-.hero-card { display: none; }
-
 /* ── Theater page ── */
 .theater-page, .mission-page { min-height: 100vh; background: var(--surface-0); position: relative; overflow: hidden; }
 .app-header { height: 44px; padding: 0 16px; display: flex; gap: 12px; align-items: center; position: relative; z-index: 4; border-bottom: 1px solid var(--border-subtle); }
@@ -174,35 +159,33 @@ h1, h2, h3 { margin: 0; letter-spacing: -.02em; }
 /* ── Next step / prediction card ── */
 .compact-card { padding: 10px 12px; }
 
-/* ── Anomaly ── */
-.anomaly-card { max-height: 220px; overflow: hidden; }
-.anomaly-list { display: grid; gap: 0; max-height: 165px; overflow: auto; }
-.anomaly-row { width: 100%; text-align: left; display: grid; gap: 2px; border: none; background: transparent; color: var(--text-primary); border-radius: 0; padding: 6px 12px; border-bottom: 1px solid var(--border-subtle); }
-.anomaly-row:hover, .anomaly-row.selected { background: var(--surface-3); }
-.anomaly-row b { font-size: 11px; letter-spacing: -.01em; }
-.anomaly-row span { color: var(--text-secondary); font-size: 10px; font-family: 'IBM Plex Mono', monospace; }
-.anomaly-row em { color: var(--accent); font-size: 10px; font-style: normal; font-weight: 700; font-family: 'IBM Plex Mono', monospace; }
 .action-stack { display: grid; gap: 6px; padding: 10px 12px; }
-.sensor-availability-card { border-left: 2px solid var(--info); }
-.sensor-availability-list { display: grid; gap: 0; margin-top: 8px; border-top: 1px solid var(--border-subtle); }
-.sensor-availability-row { display: grid; grid-template-columns: 34px 1fr 56px; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-subtle); }
-.sensor-availability-row.disabled { opacity: .55; }
+.sensor-availability-card { position: relative; z-index: 20; overflow: visible; border-left: 2px solid var(--info); }
+.sensor-availability-title { margin-bottom: 6px; }
+.sensor-availability-list { display: grid; gap: 0; }
+.sensor-availability-row { position: relative; display: grid; grid-template-columns: 34px 1fr 56px; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-subtle); }
+.sensor-availability-row:hover, .sensor-availability-row:focus-within { z-index: 50; }
+.sensor-availability-row.disabled > :not(.sensor-tooltip) { opacity: .55; }
 .sensor-toggle { border: 1px solid var(--border-default); border-radius: 2px; background: transparent; color: var(--text-secondary); font-size: 9px; font-weight: 700; padding: 4px 0; font-family: 'IBM Plex Mono', monospace; }
 .sensor-availability-row.enabled .sensor-toggle { color: #07100a; background: var(--success); border-color: var(--success); }
 .sensor-copy { display: grid; gap: 2px; min-width: 0; }
 .sensor-copy b { color: var(--text-primary); font-size: 11px; }
-.sensor-copy span, .sensor-copy em { color: var(--text-secondary); font-size: 10px; line-height: 1.25; font-style: normal; }
-.sensor-copy em { color: var(--accent); }
+.sensor-tooltip { position: absolute; left: 0; right: 0; top: calc(100% - 2px); z-index: 100; opacity: 0; visibility: hidden; pointer-events: none; border: 1px solid var(--border-default); border-radius: 3px; background: var(--surface-1); color: var(--text-secondary); padding: 7px 8px; font-size: 10px; line-height: 1.35; box-shadow: 0 10px 24px rgba(0, 0, 0, .32); transition: opacity .12s ease, visibility .12s ease; }
+.sensor-availability-row:hover .sensor-tooltip, .sensor-availability-row:focus-within .sensor-tooltip { opacity: 1; visibility: visible; }
 .pass-stepper { display: grid; grid-template-columns: 16px 1fr 16px; align-items: center; gap: 2px; }
 .pass-stepper button { width: 16px; height: 18px; border: 1px solid var(--border-default); background: transparent; color: var(--text-secondary); border-radius: 2px; padding: 0; font-size: 11px; }
 .pass-stepper strong { text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-primary); }
-.allocator-card { border-left: 2px solid var(--success); }
-.allocator-list { display: grid; gap: 0; max-height: 220px; overflow: auto; margin-top: 6px; }
-.allocator-row { padding: 7px 0; border-bottom: 1px solid var(--border-subtle); display: grid; gap: 2px; }
+.allocator-card { border-left: 2px solid var(--success); min-height: 0; }
+.allocator-title { margin-bottom: 6px; }
+.allocator-list { display: grid; align-content: start; gap: 0; min-height: 260px; height: min(360px, calc(100vh - 360px)); overflow-y: scroll; overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; scrollbar-gutter: stable; margin-top: 6px; padding-right: 4px; }
+.allocator-row { padding: 6px 0; border-bottom: 1px solid var(--border-subtle); display: grid; gap: 2px; }
 .allocator-row b { color: var(--text-primary); font-size: 11px; font-family: 'IBM Plex Mono', monospace; }
 .allocator-row span, .allocator-row em { color: var(--text-secondary); font-size: 10px; font-style: normal; font-family: 'IBM Plex Mono', monospace; }
 .allocator-row em { color: var(--accent); font-weight: 700; }
-.allocator-row p, .allocator-foot { font-size: 10px; line-height: 1.35; }
+.allocator-summary { display: grid; gap: 2px; padding-top: 8px; }
+.allocator-summary p { color: var(--text-primary); font-size: 10px; font-weight: 600; line-height: 1.35; }
+.allocator-summary span, .allocator-summary em { color: var(--text-secondary); font-size: 9px; font-style: normal; line-height: 1.35; }
+.allocator-summary em { color: var(--text-tertiary); }
 .fusion-panel { border-top: 1px solid var(--border-subtle); }
 .fusion-source, .fusion-summary { padding: 7px 12px; border-bottom: 1px solid var(--border-subtle); display: grid; gap: 2px; }
 .fusion-source b, .fusion-summary b { color: var(--text-primary); font-size: 11px; text-transform: capitalize; }
@@ -271,6 +254,5 @@ h1, h2, h3 { margin: 0; letter-spacing: -.02em; }
 }
 
 @media (max-width: 1100px) {
-  .hero { padding-top: 60px; }
   .c2-right { display: none; }
 }

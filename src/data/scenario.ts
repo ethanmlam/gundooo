@@ -109,4 +109,4 @@ export const scenariosByTheater: Record<string, MissionScenario> = {
   'long-beach': longBeachScenario,
 };
 
-export const missionScenario = straitOfHormuzScenario;
+export const missionScenario = longBeachScenario;

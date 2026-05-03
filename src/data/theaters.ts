@@ -10,15 +10,6 @@ export type Theater = {
 
 export const theaters: Theater[] = [
   {
-    id: 'strait-of-hormuz',
-    name: 'Strait of Hormuz',
-    lat: 26.6,
-    lng: 56.3,
-    risk: 'High',
-    feeds: ['AIS exercise', 'Weather', 'SensorSim'],
-    summary: 'Oil chokepoint exercise: missing tanker custody, weather-aware sensor tasking, and search-area reduction.',
-  },
-  {
     id: 'long-beach',
     name: 'Long Beach',
     lat: 33.72,

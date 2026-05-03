@@ -10,11 +10,11 @@ type Props = {
 
 export function TheaterGlobe({ theaters, onSelect }: Props) {
   const globeRef = useRef<any>(null);
-  const points = useMemo(() => theaters.map((t) => ({ ...t, size: t.risk === 'High' ? 0.42 : 0.28 })), [theaters]);
+  const points = useMemo(() => theaters.map((t) => ({ ...t, size: t.id === 'long-beach' ? 0.56 : t.risk === 'High' ? 0.42 : 0.28 })), [theaters]);
   const labels = useMemo(() => {
-    const activeTheaters = theaters.map((t) => ({ ...t, kind: 'theater' as const, priority: 120 }));
+    const activeTheaters = theaters.map((t) => ({ ...t, kind: 'theater' as const, priority: t.id === 'long-beach' ? 160 : 120 }));
     const priorityByName: Record<string, number> = {
-      'Strait of Hormuz': 115,
+      'Long Beach': 140,
       'Taiwan Strait': 112,
       'Malacca Strait': 110,
       'Suez Canal': 108,
@@ -65,10 +65,10 @@ export function TheaterGlobe({ theaters, onSelect }: Props) {
   useEffect(() => {
     const controls = globeRef.current?.controls?.();
     if (controls) {
-      controls.autoRotate = true;
+      controls.autoRotate = false;
       controls.autoRotateSpeed = 0.45;
     }
-    globeRef.current?.pointOfView?.({ lat: 19, lng: 105, altitude: 2.05 }, 900);
+    globeRef.current?.pointOfView?.({ lat: 33.72, lng: -118.25, altitude: 1.55 }, 900);
   }, []);
 
   return <Globe

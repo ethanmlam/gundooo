@@ -99,7 +99,6 @@ export const majorSeas: GlobeLabel[] = [
   { name: 'Bay of Bengal', lat: 14.5, lng: 88.0, kind: 'sea' },
   { name: 'Arabian Sea', lat: 15.0, lng: 65.0, kind: 'sea' },
   { name: 'Persian Gulf', lat: 26.5, lng: 52.0, kind: 'sea' },
-  { name: 'Strait of Hormuz', lat: 26.6, lng: 56.3, kind: 'chokepoint' },
   { name: 'Gulf of Oman', lat: 24.0, lng: 58.5, kind: 'sea' },
   { name: 'Red Sea', lat: 20.0, lng: 38.5, kind: 'sea' },
   { name: 'Bab el-Mandeb', lat: 12.6, lng: 43.3, kind: 'chokepoint' },

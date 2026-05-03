@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  ArrowLeftIcon,
   Compass03Icon,
   Database03Icon,
   RouteIcon,
@@ -65,45 +64,22 @@ function SourceProvenanceCard({ sandbox }: { sandbox: HormuzSensorSandbox }) {
   </section>;
 }
 
-function ThreatQueueCard({ backend }: { backend: BackendState }) {
-  const setSelectedMmsi = useAppStore((s) => s.setSelectedMmsi);
-  const rows = backend.triage.slice(0, 6);
-  return <section className="stripe-card anomaly-card essential-card">
-    <div className="stripe-card-head compact">
-      <div className="icon-tile danger"><Target05Icon width={17} height={17}/></div>
-      <div><span>Threat queue</span><h3>{rows.length ? 'Fused dark-track ranking' : 'Waiting for triage'}</h3></div>
-    </div>
-    <div className="anomaly-list">
-      {rows.map((item) => <button key={`${item.mmsi}-${item.dark_duration_hours}`} onClick={() => setSelectedMmsi(item.mmsi)} className={`anomaly-row ${item.mmsi === backend.selectedMmsi ? 'selected' : ''}`}>
-        <b>{item.vessel_name}</b>
-        <span>MMSI {item.mmsi} · {item.intent.replace('_', ' ')} · dark {formatDuration(item.dark_duration_hours)}</span>
-        <em>Threat {item.threat_score}{item.fused_threat_belief != null ? ` · DS ${(item.fused_threat_belief * 100).toFixed(0)}%` : ''}</em>
-      </button>)}
-      {!rows.length && <p style={{ padding: '0 12px 8px' }}>Backend online, waiting for ranked dark events.</p>}
-    </div>
-  </section>;
-}
-
-const SENSOR_EXPLAINERS: Record<string, { label: string; detail: string; constraint: string }> = {
+const SENSOR_EXPLAINERS: Record<string, { label: string; tooltip: string }> = {
   'SAR-SPOTLIGHT': {
     label: 'SAR Spotlight',
-    detail: 'High-resolution all-weather image of a small box.',
-    constraint: 'Best after the search area is already tight.',
+    tooltip: 'High-resolution SAR focuses on a small area to confirm or identify a likely target.',
   },
   'SAR-STRIPMAP': {
     label: 'SAR Stripmap',
-    detail: 'Wider SAR swath for diffuse uncertainty.',
-    constraint: 'Lower resolution and slower revisit.',
+    tooltip: 'Stripmap SAR scans a wider path to search broader uncertainty areas at lower resolution.',
   },
   'ELINT-PASS': {
     label: 'ELINT Pass',
-    detail: 'Listens for radar/comms emissions from an AIS-dark target.',
-    constraint: 'No help if the vessel is emission-controlled.',
+    tooltip: 'ELINT listens for radar or communications emissions that may reveal an AIS-dark vessel.',
   },
   'OPIR-WIDE': {
     label: 'OPIR Wide',
-    detail: 'Broad thermal cueing over a large area.',
-    constraint: 'Lower precision and weather/cloud sensitivity.',
+    tooltip: 'OPIR watches a broad area for thermal activity that can cue follow-up collection.',
   },
 };
 
@@ -113,27 +89,26 @@ function SensorAvailabilityCard({ sensors, onChange }: { sensors: SensorAvailabi
   };
   const reset = () => onChange(DEFAULT_SENSOR_AVAILABILITY);
   return <section className="stripe-card compact-card sensor-availability-card">
-    <div className="stripe-card-head compact">
-      <div className="icon-tile"><Database03Icon width={17} height={17}/></div>
-      <div><span>Run permissions</span><h3>Available sensor passes</h3></div>
-    </div>
-    <p>These toggles are the assets the operator is allowed to spend. The allocator recomputes around this budget.</p>
+    <span className="section-label sensor-availability-title">Available sensors</span>
     <div className="sensor-availability-list">
       {sensors.map((sensor) => {
-        const meta = SENSOR_EXPLAINERS[sensor.sensor_id] ?? { label: sensor.sensor_id, detail: 'Collection asset', constraint: 'Constraint unknown' };
+        const meta = SENSOR_EXPLAINERS[sensor.sensor_id] ?? {
+          label: sensor.sensor_id,
+          tooltip: 'Collection pass available to the allocator.',
+        };
         const enabled = sensor.passes_remaining > 0;
+        const tooltipId = `sensor-help-${sensor.sensor_id}`;
         return <div className={`sensor-availability-row ${enabled ? 'enabled' : 'disabled'}`} key={sensor.sensor_id}>
-          <button className="sensor-toggle" onClick={() => updatePasses(sensor.sensor_id, enabled ? 0 : 1)}>{enabled ? 'ON' : 'OFF'}</button>
+          <button className="sensor-toggle" onClick={() => updatePasses(sensor.sensor_id, enabled ? 0 : 1)} aria-describedby={tooltipId}>{enabled ? 'ON' : 'OFF'}</button>
           <div className="sensor-copy">
             <b>{meta.label}</b>
-            <span>{meta.detail}</span>
-            <em>{meta.constraint}</em>
           </div>
           <div className="pass-stepper">
-            <button onClick={() => updatePasses(sensor.sensor_id, sensor.passes_remaining - 1)}>-</button>
+            <button onClick={() => updatePasses(sensor.sensor_id, sensor.passes_remaining - 1)} aria-describedby={tooltipId}>-</button>
             <strong>{sensor.passes_remaining}</strong>
-            <button onClick={() => updatePasses(sensor.sensor_id, sensor.passes_remaining + 1)}>+</button>
+            <button onClick={() => updatePasses(sensor.sensor_id, sensor.passes_remaining + 1)} aria-describedby={tooltipId}>+</button>
           </div>
+          <span className="sensor-tooltip" id={tooltipId} role="tooltip">{meta.tooltip}</span>
         </div>;
       })}
     </div>
@@ -143,21 +118,43 @@ function SensorAvailabilityCard({ sensors, onChange }: { sensors: SensorAvailabi
 
 function AllocatorCard({ allocation }: { allocation: AllocationResult | null }) {
   const rows = allocation?.allocations ?? [];
+  const remainingSensors = allocation?.sensors_remaining ?? [];
+  const unassignedVessels = allocation?.unassigned_vessels ?? [];
+  const totalAvailablePasses = rows.length + remainingSensors.reduce((sum, sensor) => sum + sensor.passes_remaining, 0);
+  const unusedPasses = remainingSensors.reduce((sum, sensor) => sum + sensor.passes_remaining, 0);
+  const sensorTotals = rows.reduce<Record<string, number>>((totals, row) => {
+    totals[row.assigned_sensor] = (totals[row.assigned_sensor] ?? 0) + 1;
+    return totals;
+  }, {});
+  const sensorSeen: Record<string, number> = {};
   return <section className="stripe-card compact-card allocator-card">
-    <div className="stripe-card-head compact">
-      <div className="icon-tile green"><Signal03Icon width={17} height={17}/></div>
-      <div><span>Sensor allocator</span><h3>{rows.length ? `${rows.length} resource-constrained taskings` : 'Optimizing taskings'}</h3></div>
-    </div>
+    <span className="section-label allocator-title">Sensor allocator</span>
     <div className="allocator-list">
-      {rows.map((row) => <div className="allocator-row" key={`${row.priority}-${row.mmsi}-${row.assigned_sensor}`}>
-        <b>#{row.priority} {row.assigned_sensor}</b>
-        <span>{row.vessel_name} · threat {row.threat_score}</span>
-        <em>{row.expected_area_reduction_pct.toFixed(0)}% area reduction · IG {row.expected_entropy_reduction.toFixed(2)}</em>
-        <p>{row.rationale}</p>
-      </div>)}
-      {!rows.length && <p>Waiting for /allocate/default.</p>}
+      {rows.map((row) => {
+        sensorSeen[row.assigned_sensor] = (sensorSeen[row.assigned_sensor] ?? 0) + 1;
+        const passLabel = sensorTotals[row.assigned_sensor] > 1 ? `${row.assigned_sensor} pass ${sensorSeen[row.assigned_sensor]}` : row.assigned_sensor;
+        return <div className="allocator-row" key={`${row.priority}-${row.mmsi}-${row.assigned_sensor}`}>
+          <b>{passLabel}</b>
+          <span>Assigned to: {row.vessel_name || `MMSI ${row.mmsi}`}</span>
+          <em>{row.expected_area_reduction_pct.toFixed(0)}% area reduction</em>
+        </div>;
+      })}
+      {!rows.length && <p>Waiting for allocation.</p>}
     </div>
-    {allocation && <p className="mono allocator-foot">{allocation.optimization_method} · total gain {allocation.total_expected_information_gain.toFixed(2)} · remaining {allocation.sensors_remaining.map((s) => `${s.sensor_id}:${s.passes_remaining}`).join(', ') || 'none'}</p>}
+    {allocation && <div className="allocator-summary">
+      <p>
+        {rows.length} of {totalAvailablePasses} passes allocated
+        {unusedPasses > 0 ? `, ${unusedPasses} unused` : ''}
+      </p>
+      <span>
+        {unassignedVessels.length > 0
+          ? `${unassignedVessels.length} vessels left unassigned after the greedy pass`
+          : 'All eligible vessels received an assignment'}
+      </span>
+      {remainingSensors.length > 0 && <em>
+        Remaining: {remainingSensors.map((sensor) => `${sensor.sensor_id} ${sensor.passes_remaining}`).join(' · ')}
+      </em>}
+    </div>}
   </section>;
 }
 
@@ -196,12 +193,21 @@ function ShipRosterCard({ snapshot, backend, scenario }: { snapshot: LiveAisSnap
   </section>;
 }
 
-function NextStepCard({ backend, searchLoop, showAfterPolygon, onSimulate }: { backend: BackendState; searchLoop: SearchLoopData | null; showAfterPolygon: boolean; onSimulate: () => void }) {
+function selectedShipName(backend: BackendState, snapshot: LiveAisSnapshot) {
+  const liveVessel = snapshot.vessels.find((v) => Number(v.mmsi) === backend.selectedMmsi);
+  const backendVessel = backend.vessels.find((v) => v.mmsi === backend.selectedMmsi);
+  const darkEvent = backend.darkEvents.find((event) => event.mmsi === backend.selectedMmsi);
+  const triage = backend.triage.find((entry) => entry.mmsi === backend.selectedMmsi);
+  return liveVessel?.name || liveVessel?.label || backendVessel?.vessel_name || darkEvent?.vessel_name || triage?.vessel_name || `MMSI ${backend.selectedMmsi}`;
+}
+
+function NextStepCard({ backend, snapshot, searchLoop, showAfterPolygon, onSimulate }: { backend: BackendState; snapshot: LiveAisSnapshot; searchLoop: SearchLoopData | null; showAfterPolygon: boolean; onSimulate: () => void }) {
   const hasPrediction = backend.prediction && backend.predictedMmsi === backend.selectedMmsi;
+  const shipName = selectedShipName(backend, snapshot);
   return <section className="data-section">
     <span className="section-label">Prediction</span>
-    <h3 style={{ fontSize: 13, fontWeight: 600, letterSpacing: '-0.01em', color: 'var(--text-primary)', marginBottom: 4 }}>{hasPrediction ? 'Projected path active' : 'Project selected vessel'}</h3>
-    <p>{hasPrediction ? 'Cloud is based on this selected boat.' : 'Run inference for the currently selected boat.'}</p>
+    <h3 style={{ fontSize: 13, fontWeight: 600, letterSpacing: '-0.01em', color: 'var(--text-primary)', marginBottom: 4 }}>{hasPrediction ? `Projected: ${shipName}` : `Project: ${shipName}`}</h3>
+    <p>Prediction runs only for this selected ship.</p>
     <button className="primary-action" onClick={backend.predict} disabled={backend.isPredicting}>
       <ZapFastIcon width={15} height={15}/> {backend.isPredicting ? 'Projecting...' : 'Run prediction'}
     </button>
@@ -296,7 +302,6 @@ function VesselProfile({ backend, snapshot, fusion }: { backend: BackendState; s
       <p style={{ padding: 0, marginTop: 4 }}>{liveProfile?.subtitle || selectedVessel?.vessel_type || selectedEvent?.vessel_type || selectedTriage?.vessel_type || 'Click any ship to inspect it.'}</p>
     </div>
     <div className="evidence-panel minimal-evidence">
-      <div className="panel-title" style={{ padding: '10px 12px 6px' }}>Why this matters</div>
       {evidence.map((item) => <div className="evidence-row" key={item}><span />{item}</div>)}
     </div>
     <div className="identity-card">
@@ -315,8 +320,8 @@ function VesselProfile({ backend, snapshot, fusion }: { backend: BackendState; s
 }
 
 export default function Mission() {
-  const { theaterId = 'strait-of-hormuz' } = useParams();
-  const theater = theaters.find((t) => t.id === theaterId) ?? theaters.find((t) => t.id === 'strait-of-hormuz') ?? theaters[0];
+  const { theaterId = 'long-beach' } = useParams();
+  const theater = theaters.find((t) => t.id === theaterId) ?? theaters.find((t) => t.id === 'long-beach') ?? theaters[0];
   const scenario = scenariosByTheater[theater.id] ?? missionScenario;
   const isHormuz = isHormuzScenario(scenario);
   const selectedMmsi = useAppStore((s) => s.selectedMmsi);
@@ -341,8 +346,8 @@ export default function Mission() {
 
   return <main className="mission-page c2-layout lean-layout">
     <header className="mission-topbar panel">
-      <Link to="/theaters"><ArrowLeftIcon width={15} height={15}/> Theaters</Link>
-      <div><h1>GUNDOOO / {theater.name} {isHormuz ? 'Sensor Sandbox' : 'Vessel Watch'}</h1><p>{isHormuz ? 'Exercise environment: cached AIS-style tracks, weather context, simulated sensor tasking, and model search regions.' : 'Ships on the map are pre-profiled by movement, vessel type, and chokepoint context.'}</p></div>
+      <Link to="/">Gundo</Link>
+      <div><h1>Gundo / Long Beach Watch</h1><p>{isHormuz ? 'Exercise environment: cached AIS-style tracks, weather context, simulated sensor tasking, and model search regions.' : 'Ships on the map are pre-profiled by movement, vessel type, and chokepoint context.'}</p></div>
       <div className="topbar-metrics">
         <div><b>{trackedCount}</b><span>tracked</span></div>
         <div><b>{flaggedCount}</b><span>flagged</span></div>
@@ -366,10 +371,9 @@ export default function Mission() {
                 <WeatherCard sandbox={hormuzSensorSandbox} />
               </>
             : <>
-                <ThreatQueueCard backend={backend} />
                 <SensorAvailabilityCard sensors={availableSensors} onChange={setAvailableSensors} />
                 <AllocatorCard allocation={allocation} />
-                <NextStepCard backend={backend} searchLoop={searchLoop} showAfterPolygon={showAfterPolygon} onSimulate={() => setShowAfterPolygon(true)} />
+                <NextStepCard backend={backend} snapshot={snapshot} searchLoop={searchLoop} showAfterPolygon={showAfterPolygon} onSimulate={() => setShowAfterPolygon(true)} />
               </>} 
         </aside>
 

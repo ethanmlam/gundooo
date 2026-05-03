@@ -1,5 +1,4 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeftIcon } from '@untitledui/icons-react/outline';
 import { TheaterGlobe } from '../components/globe/TheaterGlobe';
 import { theaters } from '../data/theaters';
 
@@ -7,8 +6,7 @@ export default function TheaterSelect() {
   const navigate = useNavigate();
   return <main className="theater-page">
     <header className="app-header">
-      <button onClick={() => navigate('/')}><ArrowLeftIcon width={15} height={15}/> Back</button>
-      <div><h1>Theaters</h1></div>
+      <div><h1>Gundo</h1></div>
     </header>
     <section className="globe-shell minimal-globe-shell">
       <div className="globe-card"><TheaterGlobe theaters={theaters} onSelect={(t) => navigate(`/mission/${t.id}`)} /></div>
