@@ -5,5 +5,6 @@ dist
 backend/data/AIS_real.csv
 public/data/live_ais_*.json
 backend/venv
+backend/.venv/
 __pycache__
 backend/venv/
