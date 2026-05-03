@@ -231,10 +231,10 @@ export function useSearchLoop(mmsi: number | null, enabled = false) {
 }
 
 export const DEFAULT_SENSOR_AVAILABILITY: SensorAvailability[] = [
-  { sensor_id: 'SAR-SPOTLIGHT', passes_remaining: 2 },
+  { sensor_id: 'SAR-SPOTLIGHT', passes_remaining: 1 },
   { sensor_id: 'SAR-STRIPMAP', passes_remaining: 1 },
   { sensor_id: 'ELINT-PASS', passes_remaining: 1 },
-  { sensor_id: 'OPIR-WIDE', passes_remaining: 1 },
+  { sensor_id: 'OPIR-WIDE', passes_remaining: 0 },
 ];
 
 export function useSensorAvailability(): [SensorAvailability[], Dispatch<SetStateAction<SensorAvailability[]>>] {
@@ -242,7 +242,7 @@ export function useSensorAvailability(): [SensorAvailability[], Dispatch<SetStat
   return [availableSensors, setAvailableSensors];
 }
 
-export function useAllocation(availableSensors = DEFAULT_SENSOR_AVAILABILITY) {
+export function useAllocation(availableSensors = DEFAULT_SENSOR_AVAILABILITY, enabled = false) {
   const activeSensors = availableSensors.filter((sensor) => sensor.passes_remaining > 0);
   const query = useQuery({
     queryKey: ['allocator', 'custom', activeSensors],
@@ -250,6 +250,7 @@ export function useAllocation(availableSensors = DEFAULT_SENSOR_AVAILABILITY) {
       method: 'POST',
       body: JSON.stringify({ available_sensors: activeSensors, top_n_vessels: 5 }),
     }),
+    enabled,
     refetchInterval: 15000,
     retry: 1,
   });

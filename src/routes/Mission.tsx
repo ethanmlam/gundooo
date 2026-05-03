@@ -116,7 +116,7 @@ function SensorAvailabilityCard({ sensors, onChange }: { sensors: SensorAvailabi
   </section>;
 }
 
-function AllocatorCard({ allocation }: { allocation: AllocationResult | null }) {
+function AllocatorCard({ allocation, requested, onRun }: { allocation: AllocationResult | null; requested: boolean; onRun: () => void }) {
   const rows = allocation?.allocations ?? [];
   const remainingSensors = allocation?.sensors_remaining ?? [];
   const unassignedVessels = allocation?.unassigned_vessels ?? [];
@@ -139,7 +139,7 @@ function AllocatorCard({ allocation }: { allocation: AllocationResult | null }) 
           <em>{row.expected_area_reduction_pct.toFixed(0)}% area reduction</em>
         </div>;
       })}
-      {!rows.length && <p>Waiting for allocation.</p>}
+      {!rows.length && (requested ? <p>Waiting for allocation.</p> : <button className="primary-action" onClick={onRun}>Run allocator</button>)}
     </div>
     {allocation && <div className="allocator-summary">
       <p>
@@ -328,7 +328,8 @@ export default function Mission() {
   const setSelectedMmsi = useAppStore((s) => s.setSelectedMmsi);
   const backend = useBackendData(selectedMmsi);
   const [availableSensors, setAvailableSensors] = useSensorAvailability();
-  const allocation = useAllocation(availableSensors);
+  const [allocationRequested, setAllocationRequested] = useState(false);
+  const allocation = useAllocation(availableSensors, allocationRequested);
   const fusion = useFusion(!isHormuz ? selectedMmsi : null, !isHormuz && backend.isBackendOnline);
   const displayBackend = isHormuz ? { ...backend, vessels: [], darkEvents: [], triage: [], isBackendOnline: false, isLoading: false, statusText: 'Hormuz exercise sandbox' } : backend;
   const hasPrediction = backend.prediction != null && backend.predictedMmsi === backend.selectedMmsi;
@@ -372,7 +373,7 @@ export default function Mission() {
               </>
             : <>
                 <SensorAvailabilityCard sensors={availableSensors} onChange={setAvailableSensors} />
-                <AllocatorCard allocation={allocation} />
+                <AllocatorCard allocation={allocation} requested={allocationRequested} onRun={() => setAllocationRequested(true)} />
                 <NextStepCard backend={backend} snapshot={snapshot} searchLoop={searchLoop} showAfterPolygon={showAfterPolygon} onSimulate={() => setShowAfterPolygon(true)} />
               </>} 
         </aside>

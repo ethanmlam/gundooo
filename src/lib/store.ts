@@ -14,6 +14,6 @@ export const useAppStore = create<AppState>((set) => ({
   setSelectedTheater: (id) => set({ selectedTheater: id }),
   query: 'profile ships slowing near Long Beach',
   setQuery: (query) => set({ query }),
-  selectedMmsi: 309253000,
+  selectedMmsi: 0,
   setSelectedMmsi: (selectedMmsi) => set({ selectedMmsi }),
 }));

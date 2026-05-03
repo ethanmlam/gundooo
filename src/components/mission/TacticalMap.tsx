@@ -83,7 +83,7 @@ function darkEventPosition(event: DarkEvent): [number, number] {
 
 const VESSEL_DEFAULT: [number, number, number, number] = [148, 163, 184, 115];
 const VESSEL_SELECTED: [number, number, number, number] = [196, 145, 92, 255];
-const VESSEL_THREAT: [number, number, number, number] = [229, 72, 77, 89];
+const VESSEL_THREAT: [number, number, number, number] = [245, 158, 11, 255];
 
 function vesselColor(vessel: ApiVessel, selectedMmsi?: number, darkEventMmsis?: Set<number>): [number, number, number, number] {
   if (vessel.mmsi === selectedMmsi) return VESSEL_SELECTED;
@@ -208,7 +208,7 @@ function vesselTooltip(info: any): { html: string; style: typeof TOOLTIP_STYLE }
 
 export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi, searchLoop, showAfterPolygon, sensorSandbox, showSensorResult }: Props) {
   const [basemap, setBasemap] = useState<BasemapKey>('dark');
-  const [showTrails, setShowTrails] = useState(true);
+  const [showTrails, setShowTrails] = useState(false);
   const initialZoom = scenario.defaultZoom ?? 7.2;
   const mapStyle = useMemo(() => BASEMAPS[basemap].style, [basemap]);
   const showLiveAis = !backend?.isBackendOnline && (scenario.id === 'strait-of-hormuz' || scenario.id === 'persian-gulf');
@@ -399,7 +399,7 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi,
       sizeUnits: 'meters',
       sizeMinPixels: 10,
       sizeMaxPixels: 34,
-      getColor: (d: ApiVessel) => vesselColor(d, backend?.selectedMmsi),
+      getColor: (d: ApiVessel) => vesselColor(d, backend?.selectedMmsi, darkEventMmsis),
       pickable: true,
       onClick: ({ object }: any) => object?.mmsi && onSelectMmsi?.(object.mmsi),
     }),
