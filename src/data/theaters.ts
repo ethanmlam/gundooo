@@ -22,7 +22,7 @@ export const theaters: Theater[] = [
     id: 'long-beach',
     name: 'Long Beach',
     lat: 33.72,
-    lng: -118.21,
+    lng: -118.25,
     risk: 'Medium',
     feeds: ['AIS', 'Port ops', 'OSINT'],
     summary: 'Port and anchorage watch: congestion, loitering, arrivals, and cargo vessel profiling.',

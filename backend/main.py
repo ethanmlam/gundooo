@@ -291,7 +291,7 @@ def search_loop(mmsi: int):
         raise HTTPException(status_code=400, detail="No position data available")
 
     # 2. Propagate particle cloud (local — does not touch PARTICLE_CLOUDS global)
-    cloud = particle_propagate(lat, lon, heading, speed, dt_hours=6.0, n_particles=1000)
+    cloud = particle_propagate(lat, lon, heading, speed, dt_hours=2.0, n_particles=1000)
 
     # 3. Recommend best sensor tasking
     rec = recommend_sensor(cloud)

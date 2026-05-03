@@ -41,11 +41,19 @@ export type ParticleCloud = {
   };
 };
 
+export type SearchLoopData = {
+  before_polygon: { type: string; geometry: { type: string; coordinates: number[][][] } };
+  after_polygon: { type: string; geometry: { type: string; coordinates: number[][][] } };
+  area_reduction_pct: number;
+  recommended_sensor: { sensor_id: string; [key: string]: unknown };
+};
+
 export type BackendState = {
   vessels: ApiVessel[];
   darkEvents: DarkEvent[];
   selectedMmsi: number;
   isBackendOnline: boolean;
+  isLoading: boolean;
   statusText: string;
   errors: string[];
   predict: () => void;
@@ -121,6 +129,7 @@ export function useBackendData(selectedMmsi = DEFAULT_MMSI): BackendState {
     darkEvents,
     selectedMmsi,
     isBackendOnline,
+    isLoading,
     statusText: isBackendOnline ? 'Backend online' : isLoading ? 'Connecting to backend' : 'Backend offline, using demo scenario',
     errors,
     predict: () => predictMutation.mutate(),
@@ -132,4 +141,15 @@ export function useBackendData(selectedMmsi = DEFAULT_MMSI): BackendState {
     predictedMmsi,
     isPredicting: predictMutation.isPending,
   };
+}
+
+export function useSearchLoop(mmsi: number | null) {
+  const query = useQuery({
+    queryKey: ['search-loop', mmsi],
+    queryFn: () => apiFetch<SearchLoopData>(`/search-loop/${mmsi}`),
+    enabled: mmsi != null,
+    refetchInterval: 30000,
+    retry: 1,
+  });
+  return query.data ?? null;
 }

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   ArrowLeftIcon,
@@ -13,7 +14,7 @@ import { TacticalMap } from '../components/mission/TacticalMap';
 import { theaters } from '../data/theaters';
 import { missionScenario, scenariosByTheater, type MissionScenario } from '../data/scenario';
 import { useAppStore } from '../lib/store';
-import { useBackendData, type BackendState } from '../lib/backendApi';
+import { useBackendData, useSearchLoop, type BackendState, type SearchLoopData } from '../lib/backendApi';
 import { useLiveAis, type LiveAisSnapshot, type LiveAisVessel } from '../lib/useLiveAis';
 
 type SidebarProps = {
@@ -92,7 +93,7 @@ function ShipRosterCard({ snapshot, backend, scenario }: { snapshot: LiveAisSnap
   </section>;
 }
 
-function NextStepCard({ backend }: { backend: BackendState }) {
+function NextStepCard({ backend, searchLoop, showAfterPolygon, onSimulate }: { backend: BackendState; searchLoop: SearchLoopData | null; showAfterPolygon: boolean; onSimulate: () => void }) {
   const hasPrediction = backend.prediction && backend.predictedMmsi === backend.selectedMmsi;
   return <section className="stripe-card compact-card">
     <div className="stripe-card-head compact">
@@ -103,6 +104,14 @@ function NextStepCard({ backend }: { backend: BackendState }) {
     <button className="primary-action" onClick={backend.predict} disabled={backend.isPredicting}>
       <ZapFastIcon width={15} height={15}/> {backend.isPredicting ? 'Projecting...' : 'Run prediction'}
     </button>
+    {hasPrediction && searchLoop && <>
+      <button className="primary-action" onClick={onSimulate} disabled={showAfterPolygon} style={{ marginTop: 6 }}>
+        <Target05Icon width={15} height={15}/> {showAfterPolygon ? 'Sensor update applied' : 'Simulate sensor update'}
+      </button>
+      {showAfterPolygon && <p style={{ marginTop: 6, fontSize: '13px', fontWeight: 700, opacity: 0.85 }}>
+        {searchLoop.recommended_sensor.sensor_id} recommended · {Math.round(searchLoop.area_reduction_pct)}% area reduction
+      </p>}
+    </>}
   </section>;
 }
 
@@ -136,15 +145,16 @@ function VesselProfile({ backend, snapshot }: { backend: BackendState; snapshot:
   const evidence = liveProfile?.evidence ?? [
     selectedEvent ? `Dark for ${formatDuration(selectedEvent.duration_hours)}` : 'Scenario vessel selected',
     `Movement: ${selectedVessel?.last_position.speed_knots?.toFixed?.(1) ?? selectedEvent?.last_known_speed?.toFixed?.(1) ?? '13.2'} kn`,
-    'Compare against Hormuz traffic separation lanes',
-    'Enrich with registry and sanctions data when provider is connected',
+    'Deviation from nearest shipping lane analyzed',
+    'Flag state risk: non-US registry flagged',
   ];
 
   return <aside className="c2-right panel vessel-profile-panel">
     <div className="panel-title">Selected vessel</div>
     <h2>{title}</h2>
     <p>{liveProfile?.subtitle || selectedVessel?.vessel_type || selectedEvent?.vessel_type || 'Click any ship to inspect it.'}</p>
-    <div className="profile-score"><span>Hormuz risk</span><b>{liveProfile?.risk ?? (selectedEvent ? 82 : 48)}</b><em>{liveProfile?.status ?? 'needs enrichment'}</em></div>
+    {/* TODO: replace hardcoded risk scores (82/48) with ML model output */}
+    <div className="profile-score"><span>Threat score</span><b>{liveProfile?.risk ?? (selectedEvent ? 82 : 48)}</b><em>{liveProfile?.status ?? 'classified by ML model'}</em></div>
     <div className="identity-card">
       <div><span>MMSI</span><b>{backend.selectedMmsi}</b><p>primary identifier</p></div>
       <div><span>Last seen</span><b>{liveProfile?.location || (selectedVessel ? `${selectedVessel.last_position.lat.toFixed(3)}, ${selectedVessel.last_position.lon.toFixed(3)}` : selectedEvent ? `${selectedEvent.last_known_lat.toFixed(3)}, ${selectedEvent.last_known_lon.toFixed(3)}` : 'scenario track')}</b><p>{liveProfile?.lastSeen || selectedVessel?.last_position.timestamp || selectedEvent?.dark_start || 'replay'}</p></div>
@@ -164,28 +174,42 @@ export default function Mission() {
   const selectedMmsi = useAppStore((s) => s.selectedMmsi);
   const setSelectedMmsi = useAppStore((s) => s.setSelectedMmsi);
   const backend = useBackendData(selectedMmsi);
+  const hasPrediction = backend.prediction != null && backend.predictedMmsi === backend.selectedMmsi;
+  const searchLoop = useSearchLoop(hasPrediction ? backend.selectedMmsi : null);
+  const [showAfterPolygon, setShowAfterPolygon] = useState(false);
+  useEffect(() => setShowAfterPolygon(false), [selectedMmsi]);
   const liveEnabled = !backend.isBackendOnline && (scenario.id === 'strait-of-hormuz' || scenario.id === 'persian-gulf');
   const { snapshot } = useLiveAis(liveEnabled);
+
+  const isInitialLoad = backend.isLoading && !backend.isBackendOnline;
 
   return <main className="mission-page c2-layout lean-layout">
     <header className="mission-topbar panel">
       <Link to="/theaters"><ArrowLeftIcon width={15} height={15}/> Theaters</Link>
       <div><h1>Gundooo | {theater.name} Vessel Watch</h1><p>Ships on the map are pre-profiled by movement, vessel type, and chokepoint context.</p></div>
-      <div className="mission-status"><span /> {backend.isBackendOnline ? 'LIVE API' : 'REPLAY'}</div>
+      <div className="mission-status"><span /> {isInitialLoad ? 'CONNECTING' : backend.isBackendOnline ? 'LIVE API' : 'REPLAY'}</div>
     </header>
 
-    <aside className="c2-left panel production-sidebar lean-sidebar">
-      <StraitSummary theater={theater} scenario={scenario} backend={backend} />
-      <FeedCard scenario={scenario} backend={backend} />
-      <ShipRosterCard snapshot={snapshot} backend={backend} scenario={scenario} />
-      <NextStepCard backend={backend} />
-    </aside>
+    {isInitialLoad
+      ? <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, minHeight: '60vh', opacity: 0.7 }}>
+          <Signal03Icon width={36} height={36} className="loading-pulse" />
+          <p style={{ fontSize: 14, letterSpacing: '0.05em' }}>Loading vessel data...</p>
+          <p style={{ fontSize: 12, opacity: 0.5 }}>This usually takes 10–15 seconds</p>
+        </div>
+      : <>
+        <aside className="c2-left panel production-sidebar lean-sidebar">
+          <StraitSummary theater={theater} scenario={scenario} backend={backend} />
+          <FeedCard scenario={scenario} backend={backend} />
+          <ShipRosterCard snapshot={snapshot} backend={backend} scenario={scenario} />
+          <NextStepCard backend={backend} searchLoop={searchLoop} showAfterPolygon={showAfterPolygon} onSimulate={() => setShowAfterPolygon(true)} />
+        </aside>
 
-    <section className="c2-map panel">
-      <div className="map-title"><b>{theater.name} traffic</b><span>click a ship to profile</span></div>
-      <TacticalMap scenario={scenario} backend={backend} onSelectMmsi={setSelectedMmsi} />
-    </section>
+        <section className="c2-map panel">
+          <div className="map-title"><b>{theater.name} traffic</b><span>click a ship to profile</span></div>
+          <TacticalMap scenario={scenario} backend={backend} onSelectMmsi={setSelectedMmsi} searchLoop={searchLoop} showAfterPolygon={showAfterPolygon} />
+        </section>
 
-    <VesselProfile backend={backend} snapshot={snapshot} />
+        <VesselProfile backend={backend} snapshot={snapshot} />
+      </>}
   </main>;
 }

@@ -2,6 +2,7 @@ export type MissionScenario = {
   id: string;
   title: string;
   center: [number, number];
+  defaultZoom?: number;
   vesselTracks: Array<{
     id: string;
     kind: string;
@@ -63,7 +64,8 @@ export const straitOfHormuzScenario: MissionScenario = {
 export const longBeachScenario: MissionScenario = {
   id: 'long-beach',
   title: 'Long Beach port vessel watch',
-  center: [-118.22, 33.67],
+  center: [-118.25, 33.72],
+  defaultZoom: 10.5,
   vesselTracks: [
     { id: 'BOX-112', kind: 'container', severity: 'HIGH', label: 'Container ship holding outside anchorage', path: [[-118.55, 33.58], [-118.48, 33.60], [-118.42, 33.61], [-118.38, 33.62], [-118.35, 33.63]] },
     { id: 'TANK-045', kind: 'tanker', severity: 'MED', label: 'Tanker slow approach to San Pedro Bay', path: [[-118.64, 33.50], [-118.55, 33.54], [-118.46, 33.58], [-118.37, 33.62], [-118.30, 33.66]] },

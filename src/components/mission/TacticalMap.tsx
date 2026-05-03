@@ -5,7 +5,7 @@ import { IconLayer, PathLayer, PolygonLayer, ScatterplotLayer, TextLayer } from 
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { missionScenario, type MissionScenario } from '../../data/scenario';
 import { useLiveAis } from '../../lib/useLiveAis';
-import type { BackendState, ApiVessel, DarkEvent, ParticleCloud } from '../../lib/backendApi';
+import type { BackendState, ApiVessel, DarkEvent, ParticleCloud, SearchLoopData } from '../../lib/backendApi';
 
 const BASEMAPS = {
   dark: {
@@ -50,6 +50,8 @@ type Props = {
   scenario?: MissionScenario;
   backend?: BackendState;
   onSelectMmsi?: (mmsi: number) => void;
+  searchLoop?: SearchLoopData | null;
+  showAfterPolygon?: boolean;
 };
 
 function vesselPosition(vessel: ApiVessel) {
@@ -64,10 +66,12 @@ function particleData(prediction: ParticleCloud | null) {
   if (!prediction) return [];
   const weights = prediction.cloud.weights ?? [];
   const maxWeight = Math.max(...weights, 0.001);
-  return prediction.cloud.lats.map((lat, index) => ({
-    position: [prediction.cloud.lons[index], lat],
-    weight: (weights[index] ?? 1 / prediction.cloud.lats.length) / maxWeight,
-  }));
+  return prediction.cloud.lats
+    .map((lat, index) => ({
+      position: [prediction.cloud.lons[index], lat],
+      weight: (weights[index] ?? 1 / prediction.cloud.lats.length) / maxWeight,
+    }))
+    .filter((p) => !((p.position[1] > 33.78 && p.position[0] > -118.3) || (p.position[1] > 33.85 && p.position[0] > -118.5) || p.position[1] > 34.0));
 }
 
 function darkEventPosition(event: DarkEvent) {
@@ -135,9 +139,10 @@ const VESSEL_ICON_MAPPING = {
   stopped: { x: 64, y: 0, width: 64, height: 64, anchorX: 32, anchorY: 32, mask: true },
 };
 
-export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi }: Props) {
+export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi, searchLoop, showAfterPolygon }: Props) {
   const [basemap, setBasemap] = useState<BasemapKey>('dark');
-  const [zoom, setZoom] = useState(7.2);
+  const initialZoom = scenario.defaultZoom ?? 7.2;
+  const [zoom, setZoom] = useState(initialZoom);
   const mapStyle = useMemo(() => BASEMAPS[basemap].style, [basemap]);
   const markerScale = Math.max(0.7, Math.min(1.75, 0.7 + (zoom - 6.2) * 0.22));
   const showLiveAis = !backend?.isBackendOnline && (scenario.id === 'strait-of-hormuz' || scenario.id === 'persian-gulf');
@@ -146,6 +151,8 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi 
   const backendVessels = backend?.vessels ?? [];
   const darkEvents = backend?.darkEvents ?? [];
   const particles = particleData(backend?.predictedMmsi === backend?.selectedMmsi ? backend?.prediction ?? null : null);
+  const beforePoly = particles.length > 0 ? searchLoop?.before_polygon?.geometry?.coordinates?.[0] ?? null : null;
+  const afterPoly = showAfterPolygon ? searchLoop?.after_polygon?.geometry?.coordinates?.[0] ?? null : null;
 
   const layers = [
     new PolygonLayer({
@@ -193,14 +200,34 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi 
       widthMinPixels: 1,
       rounded: true,
     }),
+    new PolygonLayer({
+      id: 'search-region-before',
+      data: beforePoly ? [{ polygon: beforePoly }] : [],
+      getPolygon: (d: any) => d.polygon,
+      getFillColor: [56, 189, 248, 25],
+      getLineColor: [56, 189, 248, 180],
+      getLineWidth: 2,
+      lineWidthMinPixels: 2,
+      stroked: true,
+    }),
+    new PolygonLayer({
+      id: 'search-region-after',
+      data: afterPoly ? [{ polygon: afterPoly }] : [],
+      getPolygon: (d: any) => d.polygon,
+      getFillColor: [52, 211, 153, 20],
+      getLineColor: [52, 211, 153, 180],
+      getLineWidth: 2,
+      lineWidthMinPixels: 2,
+      stroked: true,
+    }),
     new ScatterplotLayer({
       id: 'prediction-particles',
       data: particles,
       getPosition: (d: any) => d.position,
-      getRadius: (d: any) => (900 + d.weight * 2600) * markerScale,
-      radiusMinPixels: 3,
-      radiusMaxPixels: 24,
-      getFillColor: (d: any) => [56, 189, 248, Math.max(45, Math.round(230 * d.weight))],
+      getRadius: 80,
+      radiusMinPixels: 2,
+      radiusMaxPixels: 5,
+      getFillColor: (d: any) => d.weight > 0.7 ? [239, 68, 68, 200] : d.weight > 0.3 ? [251, 191, 36, 160] : [56, 189, 248, 100],
       getLineColor: [226, 232, 240, 60],
       stroked: false,
     }),
@@ -284,7 +311,7 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi 
       id: 'backend-labels',
       data: [
         ...backendVessels.filter((v) => v.mmsi === backend?.selectedMmsi).map((v) => ({ text: `${v.vessel_name || v.mmsi}`, position: vesselPosition(v) })),
-        ...darkEvents.filter((e) => e.mmsi === backend?.selectedMmsi).map((e) => ({ text: e.vessel_name || `${e.mmsi}`, position: darkEventPosition(e) })),
+        ...darkEvents.filter((e) => e.mmsi === backend?.selectedMmsi && !backendVessels.some((v) => v.mmsi === e.mmsi)).map((e) => ({ text: e.vessel_name || `${e.mmsi}`, position: darkEventPosition(e) })),
       ],
       getPosition: (d: any) => d.position,
       getText: (d: any) => d.text,
@@ -326,7 +353,7 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi 
 
   return <div className="tactical-map-shell">
     <DeckGL
-      initialViewState={{ longitude: scenario.center[0], latitude: scenario.center[1], zoom: 7.2, pitch: 34, bearing: -18 }}
+      initialViewState={{ longitude: scenario.center[0], latitude: scenario.center[1], zoom: initialZoom, pitch: 34, bearing: -18 }}
       controller={true}
       layers={layers}
       onViewStateChange={({ viewState }: any) => setZoom(viewState.zoom)}
