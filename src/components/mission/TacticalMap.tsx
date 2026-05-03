@@ -116,17 +116,17 @@ function vesselIcon(vessel: ApiVessel) {
 
 function vesselIconSize(vessel: ApiVessel, selectedMmsi?: number) {
   const speed = vessel.last_position.speed_knots ?? 0;
-  if (vessel.mmsi === selectedMmsi) return speed < 0.8 ? 18 : 34;
-  return speed < 0.8 ? 9 : 23;
+  if (vessel.mmsi === selectedMmsi) return speed < 0.8 ? 22 : 34;
+  return speed < 0.8 ? 12 : 23;
 }
 
 const VESSEL_ICON_ATLAS = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
 <svg xmlns="http://www.w3.org/2000/svg" width="128" height="64" viewBox="0 0 128 64">
   <g id="arrow" transform="translate(0,0)">
-    <path d="M32 4 L54 56 L32 45 L10 56 Z" fill="white"/>
+    <path d="M32 5 L57 57 L32 47 L7 57 Z" fill="white"/>
   </g>
   <g id="stopped" transform="translate(64,0)">
-    <circle cx="32" cy="32" r="19" fill="white"/>
+    <circle cx="32" cy="32" r="24" fill="white"/>
   </g>
 </svg>`);
 
@@ -223,7 +223,7 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi 
       getPosition: vesselPosition,
       getAngle: vesselAngle,
       getSize: (d: ApiVessel) => vesselIconSize(d, backend?.selectedMmsi),
-      sizeMinPixels: 6,
+      sizeMinPixels: 8,
       sizeMaxPixels: 36,
       getColor: (d: ApiVessel) => vesselColor(d, backend?.selectedMmsi),
       pickable: true,
