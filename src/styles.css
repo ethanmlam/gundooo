@@ -64,6 +64,10 @@ h1, h2, h3 { margin: 0; letter-spacing: -.02em; }
 .mission-topbar div:nth-child(2) { flex: 1; }
 .mission-status { display: flex; align-items: center; gap: 6px; color: #46A758; font-size: 10px; font-weight: 700; letter-spacing: .12em; font-family: 'IBM Plex Mono', monospace; }
 .mission-status span { width: 6px; height: 6px; border-radius: 50%; background: #46A758; }
+.topbar-metrics { display: flex; gap: 6px; align-items: stretch; }
+.topbar-metrics > div { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4px 12px; border: 1px solid rgba(255,255,255,.06); border-radius: 2px; background: rgba(255,255,255,.025); }
+.topbar-metrics b { font-size: 14px; line-height: 1; font-family: 'IBM Plex Mono', monospace; color: #e5e7eb; letter-spacing: -.02em; }
+.topbar-metrics span { margin-top: 3px; color: #6b7280; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
 .map-stage { position: absolute; inset: 0; }
 .alert-panel { position: absolute; z-index: 12; top: 68px; left: 8px; width: 280px; bottom: 68px; border-radius: 2px; padding: 8px; }
 .alert-row { display: grid; grid-template-columns: 38px 1fr; gap: 8px; padding: 6px; border-radius: 2px; background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.06); margin-bottom: 6px; }

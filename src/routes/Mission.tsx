@@ -32,7 +32,7 @@ function formatDuration(hours?: number) {
   return `${hours.toFixed(1)} hr`;
 }
 
-function StraitSummary({ theater, scenario, backend }: SidebarProps) {
+function StraitSummary({ theater }: SidebarProps) {
   return <section className="stripe-card hero-card-mini">
     <div className="stripe-card-head">
       <div className="icon-tile warm"><Compass03Icon width={17} height={17}/></div>
@@ -40,10 +40,6 @@ function StraitSummary({ theater, scenario, backend }: SidebarProps) {
       <b className={`status-pill ${theater.risk.toLowerCase()}`}>{theater.risk}</b>
     </div>
     <p>Ship-by-ship profiling for vessels transiting the chokepoint.</p>
-    <div className="sidebar-metrics">
-      <div><b>{backend.vessels.length || scenario.vesselTracks.length}</b><span>tracked</span></div>
-      <div><b>{backend.darkEvents.length || 2}</b><span>flagged</span></div>
-    </div>
   </section>;
 }
 
@@ -62,19 +58,6 @@ function RailIcon({ label, children }: { label: string; children: ReactNode }) {
   return <div className="rail-icon" title={label} aria-label={label} role="img">
     {children}
   </div>;
-}
-
-function FeedCard({ scenario, backend }: { scenario: MissionScenario; backend: BackendState }) {
-  const liveEnabled = !backend.isBackendOnline && (scenario.id === 'strait-of-hormuz' || scenario.id === 'persian-gulf');
-  const { snapshot, isFresh } = useLiveAis(liveEnabled);
-  const label = backend.isBackendOnline ? 'Backend online' : liveEnabled ? `${snapshot.source ?? 'AIS feed'} · ${snapshot.vesselCount} vessels` : 'Replay scenario';
-  return <section className="stripe-card compact-card">
-    <div className="stripe-card-head compact">
-      <div className="icon-tile"><Database03Icon width={17} height={17}/></div>
-      <div><span>Feed</span><h3>{label}</h3></div>
-    </div>
-    <p>{backend.isBackendOnline ? 'Using backend vessel data.' : isFresh ? 'Recent AIS snapshot loaded.' : 'No fresh Hormuz AIS yet, using scenario data.'}</p>
-  </section>;
 }
 
 function SourceProvenanceCard({ sandbox }: { sandbox: HormuzSensorSandbox }) {
@@ -312,7 +295,8 @@ export default function Mission() {
   const displaySnapshot = isHormuz ? { ...snapshot, vessels: [] } : snapshot;
 
   const isInitialLoad = !isHormuz && backend.isLoading && !backend.isBackendOnline;
-  const statusLabel = isInitialLoad ? 'CONNECTING' : isHormuz ? 'EXERCISE' : backend.isBackendOnline ? 'LIVE API' : 'REPLAY';
+  const trackedCount = displayBackend.vessels.length || scenario.vesselTracks.length;
+  const flaggedCount = displayBackend.darkEvents.length || 2;
   const layoutClassName = [
     'mission-page c2-layout lean-layout',
     leftSidebarCollapsed ? 'left-sidebar-collapsed' : '',
@@ -323,7 +307,10 @@ export default function Mission() {
     <header className="mission-topbar panel">
       <Link to="/theaters"><ArrowLeftIcon width={15} height={15}/> Theaters</Link>
       <div><h1>GUNDOOO / {theater.name} {isHormuz ? 'Sensor Sandbox' : 'Vessel Watch'}</h1><p>{isHormuz ? 'Exercise environment: cached AIS-style tracks, weather context, simulated sensor tasking, and model search regions.' : 'Ships on the map are pre-profiled by movement, vessel type, and chokepoint context.'}</p></div>
-      <div className="mission-status"><span /> {statusLabel}</div>
+      <div className="topbar-metrics">
+        <div><b>{trackedCount}</b><span>tracked</span></div>
+        <div><b>{flaggedCount}</b><span>flagged</span></div>
+      </div>
     </header>
 
     {isInitialLoad
@@ -358,7 +345,7 @@ export default function Mission() {
               </div>
             : <>
                 <StraitSummary theater={theater} scenario={scenario} backend={displayBackend} />
-                {isHormuz ? <SourceProvenanceCard sandbox={hormuzSensorSandbox} /> : <FeedCard scenario={scenario} backend={displayBackend} />}
+                {isHormuz && <SourceProvenanceCard sandbox={hormuzSensorSandbox} />}
                 <ShipRosterCard snapshot={displaySnapshot} backend={displayBackend} scenario={scenario} />
                 {isHormuz
                   ? <>
