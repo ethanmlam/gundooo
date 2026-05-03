@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -100,6 +101,7 @@ def _load_real_data():
             "mmsi": int(mmsi),
             "vessel_type": vessel_type,
             "name": name,
+            "vessel_name": name,
             "track": track,
             "last_position": track[-1] if track else None,
         })
@@ -122,8 +124,10 @@ def get_vessels():
             "mmsi": v["mmsi"],
             "vessel_type": v["vessel_type"],
             "name": v["name"],
+            "vessel_name": v["name"],
             "last_position": v["last_position"],
-            "track_points": len(v["track"]),
+            "track_points": v["track"],
+            "track_point_count": len(v["track"]),
         })
     return {"vessels": summary, "count": len(summary)}
 
@@ -143,9 +147,13 @@ class PredictRequest(BaseModel):
 
 class UpdateRequest(BaseModel):
     mmsi: int
-    obs_lat: float
-    obs_lon: float
+    obs_lat: Optional[float] = None
+    obs_lon: Optional[float] = None
     obs_sigma: float = 0.01
+    observation_lat: Optional[float] = None
+    observation_lon: Optional[float] = None
+    sensor_type: Optional[str] = None
+    confidence: Optional[float] = None
 
 
 @app.post("/predict")
@@ -184,13 +192,21 @@ def update(req: UpdateRequest):
     if req.mmsi not in PARTICLE_CLOUDS:
         raise HTTPException(status_code=400, detail=f"No particle cloud for MMSI {req.mmsi}. Call /predict first.")
 
+    obs_lat = req.obs_lat if req.obs_lat is not None else req.observation_lat
+    obs_lon = req.obs_lon if req.obs_lon is not None else req.observation_lon
+    if obs_lat is None or obs_lon is None:
+        raise HTTPException(status_code=400, detail="obs_lat/obs_lon or observation_lat/observation_lon required")
+
     cloud = PARTICLE_CLOUDS[req.mmsi]
-    updated = bayesian_update(cloud, req.obs_lat, req.obs_lon, req.obs_sigma)
+    sigma = req.obs_sigma
+    if req.confidence is not None and req.confidence > 0:
+        sigma = max(0.003, 0.03 * (1.0 - min(req.confidence, 0.99)))
+    updated = bayesian_update(cloud, obs_lat, obs_lon, sigma)
     PARTICLE_CLOUDS[req.mmsi] = updated
 
     return {
         "mmsi": req.mmsi,
-        "observation": {"lat": req.obs_lat, "lon": req.obs_lon},
+        "observation": {"lat": obs_lat, "lon": obs_lon, "sensor_type": req.sensor_type, "confidence": req.confidence},
         "cloud": updated,
     }
 
