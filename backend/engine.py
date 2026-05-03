@@ -26,17 +26,30 @@ class Recommendation(TypedDict):
 
 
 def _probably_water_socal(lat: NDArray, lon: NDArray) -> NDArray:
-    """Coarse water mask for the LA / Long Beach replay demo.
+    """Conservative LA / Long Beach water mask for the replay demo.
 
-    This is intentionally conservative: keep open Pacific points and harbor
-    water, reject the obvious inland/north/east land splatter from the Monte
-    Carlo cloud. It is not a nautical coastline model.
+    This avoids not only inland areas, but also most port/dock land. It keeps
+    the open Pacific and the outer harbor/approach waters where a dark-vessel
+    search cloud should plausibly live. It is intentionally stricter than a
+    real coastline model because false land particles look bad in the demo.
     """
-    open_pacific = (lat < 33.66) | (lon < -118.48)
-    outer_approach = (lat < 33.78) & (lon < -118.28)
-    harbor_water = (lat >= 33.68) & (lat <= 33.79) & (lon >= -118.31) & (lon <= -118.12)
-    not_far_inland = (lat < 33.95) & (lon < -118.05)
-    return (open_pacific | outer_approach | harbor_water) & not_far_inland
+    # Open water outside the breakwater and offshore approaches.
+    open_pacific = (lat < 33.67) | (lon < -118.42)
+
+    # Main harbor mouth / San Pedro Bay water. Keep it south of the dock-heavy
+    # terminal grid and west/south of the container islands.
+    outer_harbor = (lat >= 33.67) & (lat <= 33.735) & (lon >= -118.31) & (lon <= -118.12)
+    harbor_mouth = (lat >= 33.70) & (lat <= 33.755) & (lon >= -118.235) & (lon <= -118.145)
+
+    # Remove obvious dock/terminal land blocks. These boxes are approximate but
+    # cover the visually bad areas around Terminal Island / inner Long Beach.
+    terminal_island = (lat >= 33.735) & (lat <= 33.785) & (lon >= -118.285) & (lon <= -118.185)
+    long_beach_inner = (lat >= 33.735) & (lat <= 33.79) & (lon >= -118.19) & (lon <= -118.12)
+    san_pedro_land = (lat >= 33.705) & (lat <= 33.765) & (lon >= -118.315) & (lon <= -118.245)
+
+    plausible = open_pacific | outer_harbor | harbor_mouth
+    dock_land = terminal_island | long_beach_inner | san_pedro_land
+    return plausible & ~dock_land
 
 
 def particle_propagate(
