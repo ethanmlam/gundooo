@@ -248,3 +248,9 @@ h1, h2, h3 { margin: 0; letter-spacing: -.045em; }
 .basemap-toggle button { border: 0; border-radius: 8px; padding: 7px 9px; background: transparent; color: #94a3b8; font-size: 11px; font-weight: 850; }
 .basemap-toggle button.active { color: #06111f; background: linear-gradient(180deg, #f8fafc, #dbeafe); }
 .basemap-toggle button:not(.active):hover { color: #e2e8f0; background: rgba(255,255,255,.06); }
+
+.simple-selector .selector-heading p,
+.simple-selector .theater-row span { display: none; }
+.simple-selector { width: 320px; }
+.minimal-globe-shell .selector-note,
+.minimal-globe-shell .feed-note { display: none; }

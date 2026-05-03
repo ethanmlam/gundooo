@@ -166,7 +166,7 @@ export default function Mission() {
   return <main className="mission-page c2-layout lean-layout">
     <header className="mission-topbar panel">
       <Link to="/theaters"><ArrowLeftIcon width={15} height={15}/> Theaters</Link>
-      <div><h1>Gundooo | {theater.name} Vessel Watch</h1><p>Who is in the strait, what changed, and which ship deserves a closer look.</p></div>
+      <div><h1>Gundooo | {theater.name} Vessel Watch</h1><p>Ships on the map are pre-profiled by movement, vessel type, and chokepoint context.</p></div>
       <div className="mission-status"><span /> {backend.isBackendOnline ? 'LIVE API' : 'REPLAY'}</div>
     </header>
 
@@ -178,7 +178,7 @@ export default function Mission() {
     </aside>
 
     <section className="c2-map panel">
-      <div className="map-title"><b>Hormuz traffic</b><span>click a ship to profile</span></div>
+      <div className="map-title"><b>{theater.name} traffic</b><span>click a ship to profile</span></div>
       <TacticalMap scenario={scenario} backend={backend} onSelectMmsi={setSelectedMmsi} />
     </section>
 

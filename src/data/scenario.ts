@@ -17,97 +17,33 @@ export type MissionScenario = {
   confidence: Array<{ name: string; value: number }>;
 };
 
-export const southChinaSeaScenario: MissionScenario = {
-  id: 'south-china-sea',
-  title: 'South China Sea live watch',
-  center: [114.0, 13.5],
-  vesselTracks: [
-    {
-      id: 'AIS-7421',
-      kind: 'cargo',
-      severity: 'HIGH',
-      label: 'AIS-dark cargo-class vessel',
-      path: [[113.45, 13.1], [113.7, 13.22], [113.95, 13.33], [114.15, 13.42], [114.31, 13.51]],
-    },
-    {
-      id: 'AIS-1902',
-      kind: 'tanker',
-      severity: 'LOW',
-      label: 'Tanker, route normal',
-      path: [[113.1, 12.7], [113.45, 12.82], [113.8, 12.94], [114.2, 13.02], [114.56, 13.16]],
-    },
-    {
-      id: 'ADS-B-88',
-      kind: 'aircraft',
-      severity: 'MED',
-      label: 'Patrol aircraft orbit',
-      path: [[114.6, 14.1], [114.3, 13.95], [114.1, 14.15], [114.42, 14.31], [114.72, 14.18]],
-    },
-  ],
-  ghostTrack: [[114.31, 13.51], [114.46, 13.61], [114.62, 13.7], [114.82, 13.77]],
-  radarCone: [[114.16, 13.38], [115.02, 14.02], [114.62, 13.18]],
-  zones: [
-    { name: 'Reef exclusion watch', polygon: [[114.2, 13.2], [115.02, 13.48], [114.9, 14.1], [114.1, 13.86]] },
-  ],
-  alerts: [
-    { severity: 'HIGH', title: 'AIS dropout near reef watch zone', source: 'AIS + RadarSim', time: '14:32Z' },
-    { severity: 'MED', title: 'Patrol aircraft orbit tightening', source: 'ADS-B', time: '14:37Z' },
-    { severity: 'MED', title: 'Synthetic radar contact enters ghost corridor', source: 'RadarSim', time: '14:41Z' },
-    { severity: 'LOW', title: 'Tanker route normal, no tasking', source: 'AIS', time: '14:44Z' },
-  ],
-  feedVolume: [
-    { t: '14:00', AIS: 42, ADSB: 8, Radar: 0 },
-    { t: '14:10', AIS: 46, ADSB: 10, Radar: 1 },
-    { t: '14:20', AIS: 40, ADSB: 12, Radar: 2 },
-    { t: '14:30', AIS: 27, ADSB: 13, Radar: 4 },
-    { t: '14:40', AIS: 24, ADSB: 14, Radar: 8 },
-    { t: '14:50', AIS: 31, ADSB: 12, Radar: 9 },
-  ],
-  confidence: [
-    { name: 'AIS', value: 8 },
-    { name: 'RadarSim', value: 82 },
-    { name: 'ADS-B', value: 54 },
-    { name: 'OSINT', value: 41 },
-  ],
-};
-
 export const straitOfHormuzScenario: MissionScenario = {
   id: 'strait-of-hormuz',
-  title: 'Strait of Hormuz tanker watch',
-  center: [56.45, 26.45],
+  title: 'Strait of Hormuz ship risk watch',
+  center: [56.35, 26.35],
   vesselTracks: [
-    {
-      id: 'TANKER-381',
-      kind: 'tanker',
-      severity: 'HIGH',
-      label: 'VLCC slows near traffic separation lane',
-      path: [[55.35, 26.1], [55.72, 26.18], [56.08, 26.24], [56.38, 26.32], [56.7, 26.45]],
-    },
-    {
-      id: 'AIS-2047',
-      kind: 'cargo',
-      severity: 'MED',
-      label: 'Cargo vessel hugging Omani coast',
-      path: [[56.0, 25.9], [56.28, 25.98], [56.56, 26.05], [56.88, 26.14], [57.18, 26.25]],
-    },
-    {
-      id: 'ADS-B-P8',
-      kind: 'aircraft',
-      severity: 'MED',
-      label: 'Maritime patrol orbit east of chokepoint',
-      path: [[56.95, 26.85], [56.62, 26.72], [56.48, 26.95], [56.82, 27.08], [57.08, 26.92]],
-    },
+    { id: 'VLCC-381', kind: 'tanker', severity: 'HIGH', label: 'VLCC slowing in westbound lane', path: [[55.35, 26.1], [55.72, 26.18], [56.08, 26.24], [56.38, 26.32], [56.7, 26.45]] },
+    { id: 'LNG-612', kind: 'tanker', severity: 'HIGH', label: 'LNG carrier holding near lane merge', path: [[55.95, 26.55], [56.16, 26.55], [56.34, 26.52], [56.46, 26.50], [56.53, 26.50]] },
+    { id: 'CRUDE-044', kind: 'tanker', severity: 'MED', label: 'Crude tanker slow transit', path: [[55.58, 26.34], [55.9, 26.39], [56.22, 26.45], [56.55, 26.52], [56.88, 26.62]] },
+    { id: 'CARGO-2047', kind: 'cargo', severity: 'MED', label: 'Cargo vessel hugging Omani coast', path: [[56.0, 25.9], [56.28, 25.98], [56.56, 26.05], [56.88, 26.14], [57.18, 26.25]] },
+    { id: 'BULK-771', kind: 'bulk carrier', severity: 'LOW', label: 'Bulk carrier normal eastbound transit', path: [[55.15, 26.02], [55.55, 26.08], [55.95, 26.15], [56.35, 26.22], [56.74, 26.31]] },
+    { id: 'CONT-508', kind: 'container', severity: 'LOW', label: 'Container ship normal traffic lane', path: [[57.25, 26.65], [56.9, 26.58], [56.52, 26.50], [56.12, 26.43], [55.75, 26.36]] },
+    { id: 'CHEM-290', kind: 'chemical tanker', severity: 'MED', label: 'Chemical tanker below lane speed', path: [[57.35, 26.18], [57.05, 26.16], [56.72, 26.15], [56.42, 26.16], [56.13, 26.18]] },
+    { id: 'TUG-118', kind: 'tug', severity: 'LOW', label: 'Tug and service craft near approaches', path: [[56.42, 26.03], [56.5, 26.08], [56.58, 26.09], [56.62, 26.12], [56.68, 26.14]] },
+    { id: 'SUPPLY-73', kind: 'offshore supply', severity: 'LOW', label: 'Offshore supply vessel near Fujairah approaches', path: [[56.95, 25.72], [56.85, 25.82], [56.75, 25.92], [56.65, 26.02], [56.58, 26.11]] },
+    { id: 'PATROL-P8', kind: 'aircraft', severity: 'MED', label: 'Maritime patrol orbit east of chokepoint', path: [[56.95, 26.85], [56.62, 26.72], [56.48, 26.95], [56.82, 27.08], [57.08, 26.92]] },
   ],
   ghostTrack: [[56.7, 26.45], [56.86, 26.5], [57.05, 26.56], [57.28, 26.62]],
-  radarCone: [[56.25, 26.2], [57.25, 26.75], [56.95, 25.95]],
+  radarCone: [[56.0, 26.05], [57.35, 26.82], [57.10, 25.78]],
   zones: [
-    { name: 'Hormuz traffic separation watch', polygon: [[55.8, 26.0], [57.25, 26.28], [57.05, 26.78], [55.65, 26.48]] },
+    { name: 'Traffic separation scheme', polygon: [[55.25, 25.98], [57.35, 26.18], [57.22, 26.72], [55.15, 26.45]] },
+    { name: 'Slowdown watch box', polygon: [[56.08, 26.18], [56.72, 26.24], [56.62, 26.58], [55.98, 26.48]] },
   ],
   alerts: [
-    { severity: 'HIGH', title: 'Tanker speed drop inside Hormuz chokepoint', source: 'AIS + RadarSim', time: '16:12Z' },
+    { severity: 'HIGH', title: 'VLCC speed drop inside Hormuz chokepoint', source: 'AIS + RadarSim', time: '16:12Z' },
+    { severity: 'HIGH', title: 'LNG carrier holding near lane merge', source: 'AIS', time: '16:16Z' },
     { severity: 'MED', title: 'AIS density spike near outbound lane', source: 'AIS', time: '16:18Z' },
-    { severity: 'MED', title: 'Patrol aircraft orbit overlaps predicted corridor', source: 'ADS-B', time: '16:24Z' },
-    { severity: 'LOW', title: 'Port approaches nominal at Fujairah', source: 'OSINT', time: '16:31Z' },
+    { severity: 'LOW', title: 'Fujairah approaches nominal', source: 'OSINT', time: '16:31Z' },
   ],
   feedVolume: [
     { t: '16:00', AIS: 68, ADSB: 5, Radar: 1 },
@@ -120,15 +56,55 @@ export const straitOfHormuzScenario: MissionScenario = {
   confidence: [
     { name: 'AIS', value: 62 },
     { name: 'RadarSim', value: 76 },
-    { name: 'ADS-B', value: 49 },
     { name: 'OSINT', value: 36 },
   ],
 };
 
-export const scenariosByTheater: Record<string, MissionScenario> = {
-  'south-china-sea': southChinaSeaScenario,
-  'strait-of-hormuz': straitOfHormuzScenario,
-  'persian-gulf': straitOfHormuzScenario,
+export const longBeachScenario: MissionScenario = {
+  id: 'long-beach',
+  title: 'Long Beach port vessel watch',
+  center: [-118.22, 33.67],
+  vesselTracks: [
+    { id: 'BOX-112', kind: 'container', severity: 'HIGH', label: 'Container ship holding outside anchorage', path: [[-118.55, 33.58], [-118.48, 33.60], [-118.42, 33.61], [-118.38, 33.62], [-118.35, 33.63]] },
+    { id: 'TANK-045', kind: 'tanker', severity: 'MED', label: 'Tanker slow approach to San Pedro Bay', path: [[-118.64, 33.50], [-118.55, 33.54], [-118.46, 33.58], [-118.37, 33.62], [-118.30, 33.66]] },
+    { id: 'AUTO-703', kind: 'vehicle carrier', severity: 'LOW', label: 'Vehicle carrier normal approach', path: [[-118.16, 33.50], [-118.18, 33.56], [-118.20, 33.61], [-118.22, 33.66], [-118.24, 33.70]] },
+    { id: 'BULK-219', kind: 'bulk carrier', severity: 'MED', label: 'Bulk carrier loitering near anchorage edge', path: [[-118.48, 33.72], [-118.45, 33.71], [-118.42, 33.72], [-118.44, 33.74], [-118.47, 33.73]] },
+    { id: 'TUG-88', kind: 'tug', severity: 'LOW', label: 'Tug crossing harbor approaches', path: [[-118.29, 33.70], [-118.25, 33.71], [-118.21, 33.72], [-118.18, 33.73], [-118.15, 33.74]] },
+    { id: 'FEEDER-55', kind: 'container', severity: 'LOW', label: 'Feeder normal departure', path: [[-118.20, 33.74], [-118.25, 33.70], [-118.30, 33.66], [-118.36, 33.62], [-118.43, 33.58]] },
+    { id: 'PILOT-12', kind: 'pilot vessel', severity: 'LOW', label: 'Pilot vessel activity near channel', path: [[-118.18, 33.71], [-118.20, 33.70], [-118.22, 33.69], [-118.24, 33.68], [-118.26, 33.67]] },
+    { id: 'CARGO-908', kind: 'cargo', severity: 'MED', label: 'Cargo vessel delayed outside port', path: [[-118.58, 33.68], [-118.52, 33.68], [-118.48, 33.67], [-118.45, 33.67], [-118.43, 33.66]] },
+  ],
+  ghostTrack: [[-118.35, 33.63], [-118.31, 33.65], [-118.27, 33.67], [-118.23, 33.69]],
+  radarCone: [[-118.52, 33.55], [-118.18, 33.76], [-118.08, 33.58]],
+  zones: [
+    { name: 'San Pedro Bay anchorage watch', polygon: [[-118.62, 33.50], [-118.30, 33.52], [-118.24, 33.73], [-118.58, 33.76]] },
+    { name: 'Port approach corridor', polygon: [[-118.35, 33.60], [-118.12, 33.68], [-118.16, 33.78], [-118.42, 33.68]] },
+  ],
+  alerts: [
+    { severity: 'HIGH', title: 'Container ship holding outside anchorage', source: 'AIS', time: '09:12Z' },
+    { severity: 'MED', title: 'Bulk carrier loitering near anchorage edge', source: 'AIS', time: '09:18Z' },
+    { severity: 'MED', title: 'Tanker slow approach to San Pedro Bay', source: 'AIS', time: '09:24Z' },
+    { severity: 'LOW', title: 'Pilot vessel activity nominal', source: 'Port ops', time: '09:31Z' },
+  ],
+  feedVolume: [
+    { t: '09:00', AIS: 92, ADSB: 2, Radar: 0 },
+    { t: '09:10', AIS: 98, ADSB: 2, Radar: 1 },
+    { t: '09:20', AIS: 101, ADSB: 1, Radar: 2 },
+    { t: '09:30', AIS: 95, ADSB: 1, Radar: 2 },
+    { t: '09:40', AIS: 88, ADSB: 2, Radar: 1 },
+    { t: '09:50', AIS: 91, ADSB: 2, Radar: 1 },
+  ],
+  confidence: [
+    { name: 'AIS', value: 74 },
+    { name: 'Port ops', value: 58 },
+    { name: 'OSINT', value: 31 },
+  ],
 };
 
-export const missionScenario = southChinaSeaScenario;
+export const scenariosByTheater: Record<string, MissionScenario> = {
+  'strait-of-hormuz': straitOfHormuzScenario,
+  'persian-gulf': straitOfHormuzScenario,
+  'long-beach': longBeachScenario,
+};
+
+export const missionScenario = straitOfHormuzScenario;
