@@ -137,7 +137,9 @@ const VESSEL_ICON_MAPPING = {
 
 export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi }: Props) {
   const [basemap, setBasemap] = useState<BasemapKey>('dark');
+  const [zoom, setZoom] = useState(7.2);
   const mapStyle = useMemo(() => BASEMAPS[basemap].style, [basemap]);
+  const markerScale = Math.max(0.7, Math.min(1.75, 0.7 + (zoom - 6.2) * 0.22));
   const showLiveAis = !backend?.isBackendOnline && (scenario.id === 'strait-of-hormuz' || scenario.id === 'persian-gulf');
   const { snapshot, isFresh } = useLiveAis(showLiveAis);
   const liveVessels = isFresh ? snapshot.vessels : [];
@@ -195,9 +197,9 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi 
       id: 'prediction-particles',
       data: particles,
       getPosition: (d: any) => d.position,
-      getRadius: (d: any) => 900 + d.weight * 2600,
-      radiusMinPixels: 5,
-      radiusMaxPixels: 16,
+      getRadius: (d: any) => (900 + d.weight * 2600) * markerScale,
+      radiusMinPixels: 3,
+      radiusMaxPixels: 24,
       getFillColor: (d: any) => [56, 189, 248, Math.max(45, Math.round(230 * d.weight))],
       getLineColor: [226, 232, 240, 60],
       stroked: false,
@@ -206,9 +208,9 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi 
       id: 'selected-vessel-halo',
       data: backendVessels.filter((v) => v.mmsi === backend?.selectedMmsi),
       getPosition: vesselPosition,
-      getRadius: 2100,
-      radiusMinPixels: 15,
-      radiusMaxPixels: 28,
+      getRadius: 2100 * markerScale,
+      radiusMinPixels: 10,
+      radiusMaxPixels: 38,
       getFillColor: [15, 23, 42, 70],
       getLineColor: [245, 158, 11, 240],
       lineWidthMinPixels: 2,
@@ -222,9 +224,9 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi 
       getIcon: vesselIcon,
       getPosition: vesselPosition,
       getAngle: vesselAngle,
-      getSize: (d: ApiVessel) => vesselIconSize(d, backend?.selectedMmsi),
-      sizeMinPixels: 8,
-      sizeMaxPixels: 36,
+      getSize: (d: ApiVessel) => vesselIconSize(d, backend?.selectedMmsi) * markerScale,
+      sizeMinPixels: 5,
+      sizeMaxPixels: 48,
       getColor: (d: ApiVessel) => vesselColor(d, backend?.selectedMmsi),
       pickable: true,
       onClick: ({ object }: any) => object?.mmsi && onSelectMmsi?.(object.mmsi),
@@ -247,9 +249,9 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi 
       id: 'scenario-track-heads',
       data: backend?.isBackendOnline ? [] : scenario.vesselTracks.map((track) => ({ ...track, position: track.path[track.path.length - 1] })),
       getPosition: (d: any) => d.position,
-      getRadius: 2500,
-      radiusMinPixels: 5,
-      radiusMaxPixels: 12,
+      getRadius: 2500 * markerScale,
+      radiusMinPixels: 4,
+      radiusMaxPixels: 20,
       getFillColor: (d: any) => d.severity === 'HIGH' ? [245, 158, 11, 190] : [120, 150, 185, 150],
       getLineColor: [255, 255, 255, 220],
       lineWidthMinPixels: 1,
@@ -268,9 +270,9 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi 
       id: 'live-ais-vessels',
       data: liveVessels,
       getPosition: (d: any) => [d.lng, d.lat],
-      getRadius: (d: any) => d.sog != null && d.sog < 1 ? 1150 : 800,
+      getRadius: (d: any) => (d.sog != null && d.sog < 1 ? 1150 : 800) * markerScale,
       radiusMinPixels: 3,
-      radiusMaxPixels: 9,
+      radiusMaxPixels: 14,
       getFillColor: (d: any) => d.sog != null && d.sog < 1 ? [251, 191, 36, 220] : [125, 211, 252, 200],
       getLineColor: [255, 255, 255, 210],
       lineWidthMinPixels: 1,
@@ -327,6 +329,7 @@ export function TacticalMap({ scenario = missionScenario, backend, onSelectMmsi 
       initialViewState={{ longitude: scenario.center[0], latitude: scenario.center[1], zoom: 7.2, pitch: 34, bearing: -18 }}
       controller={true}
       layers={layers}
+      onViewStateChange={({ viewState }: any) => setZoom(viewState.zoom)}
     >
       <Map mapStyle={mapStyle as any} />
     </DeckGL>
