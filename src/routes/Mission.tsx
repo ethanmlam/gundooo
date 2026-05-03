@@ -358,22 +358,12 @@ export default function Mission() {
           <SidebarToggle side="left" collapsed={leftSidebarCollapsed} onClick={() => setLeftSidebarCollapsed((value) => !value)} />
           {leftSidebarCollapsed
             ? <div className="sidebar-icon-rail" aria-label="Mission sidebar">
-                <RailIcon label={`Watch area: ${theater.name}`}><Compass03Icon width={18} height={18}/></RailIcon>
-                <RailIcon label={isHormuz ? 'Exercise provenance' : displayBackend.isBackendOnline ? 'Backend feed online' : 'Replay feed'}><Database03Icon width={18} height={18}/></RailIcon>
-                <RailIcon label={`${displayBackend.vessels.length || scenario.vesselTracks.length} vessel profiles`}><RouteIcon width={18} height={18}/></RailIcon>
-                <RailIcon label={isHormuz ? 'Sensor sandbox ready' : 'P1 sensor loop'}><Target05Icon width={18} height={18}/></RailIcon>
+                <RailIcon label="Threat queue"><Target05Icon width={18} height={18}/></RailIcon>
+                <RailIcon label="P1 sensor loop"><ZapFastIcon width={18} height={18}/></RailIcon>
               </div>
             : <>
-                <StraitSummary theater={theater} scenario={scenario} backend={displayBackend} />
-                {isHormuz && <SourceProvenanceCard sandbox={hormuzSensorSandbox} />}
-                {!isHormuz && <ThreatQueueCard backend={backend} />}
-                <ShipRosterCard snapshot={displaySnapshot} backend={displayBackend} scenario={scenario} />
-                {isHormuz
-                  ? <>
-                      <SensorSandboxCard sandbox={hormuzSensorSandbox} applied={sandboxApplied} onApply={() => setSandboxApplied(true)} onReset={() => setSandboxApplied(false)} />
-                      <WeatherCard sandbox={hormuzSensorSandbox} />
-                    </>
-                  : <SensorFusionCard backend={backend} searchLoop={searchLoop} showAfterPolygon={showAfterPolygon} onFuse={fuseDetection} />}
+                <ThreatQueueCard backend={backend} />
+                <SensorFusionCard backend={backend} searchLoop={searchLoop} showAfterPolygon={showAfterPolygon} onFuse={fuseDetection} />
               </>}
         </aside>
 
