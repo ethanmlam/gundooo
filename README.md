@@ -44,17 +44,24 @@ Endpoints: /vessels, /dark-events, /triage, /predict, /update, /recommend/{mmsi}
 ## Running locally
 
 **Backend:**
+
+```bash
 cd backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-# Place AIS_real.csv in backend/data/
 python main.py
-# Runs on http://localhost:8000
+```
+
+AIS data not included — download from [MarineCadastre](https://marinecadastre.gov/ais/) and place `AIS_real.csv` in `backend/data/`.
 
 **Frontend:**
+
+```bash
 npm install
 npm run dev
-# Opens http://localhost:5173, navigate to /#/mission/long-beach
+```
+
+Open `http://localhost:5173` and navigate to `/#/mission/long-beach`.
 
 ## Data
 
