@@ -114,7 +114,7 @@ export function useBackendData(selectedMmsi = DEFAULT_MMSI): BackendState {
   const predictMutation = useMutation({
     mutationFn: () => apiFetch<ParticleCloud>('/predict', {
       method: 'POST',
-      body: JSON.stringify({ mmsi: selectedMmsi, dt_hours: 6, n_particles: 1000 }),
+      body: JSON.stringify({ mmsi: selectedMmsi, dt_hours: 2.5, n_particles: 1000 }),
     }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['backend', 'recommend', selectedMmsi] }),
   });

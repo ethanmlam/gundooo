@@ -136,9 +136,21 @@ def recommend_sensor(
     if candidate_sensors is None:
         center_lat = float(np.average(lats, weights=weights))
         center_lon = float(np.average(lons, weights=weights))
-        offsets = [(0, 0), (0.05, 0), (-0.05, 0), (0, 0.05), (0, -0.05)]
+        lat_std = max(float(np.std(lats)), 0.015)
+        lon_std = max(float(np.std(lons)), 0.015)
+        # Spread looks across the reachable cloud instead of stacking every SAR
+        # candidate on the weighted mean. Offsets are in degrees, roughly
+        # 1 degree latitude = 60 nm.
+        offsets = [
+            (0.0, 0.0),
+            (0.75 * lat_std, 0.75 * lon_std),
+            (-0.75 * lat_std, -0.75 * lon_std),
+            (0.75 * lat_std, -0.75 * lon_std),
+            (-0.75 * lat_std, 0.75 * lon_std),
+        ]
+        radius = max(0.025, min(0.08, 0.65 * max(lat_std, lon_std)))
         candidate_sensors = [
-            {"sensor_id": f"SAR-{i}", "lat": center_lat + dlat, "lon": center_lon + dlon, "radius": 0.03}
+            {"sensor_id": f"SAR-{i}", "lat": center_lat + dlat, "lon": center_lon + dlon, "radius": radius}
             for i, (dlat, dlon) in enumerate(offsets)
         ]
 
